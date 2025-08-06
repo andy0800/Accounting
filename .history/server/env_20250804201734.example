@@ -1,0 +1,3 @@
+MONGODB_URI=mongodb+srv://andydaddy080:1s8trWSbR9J8rNkq@cluster0.g5rsvmu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+PORT=5000
+NODE_ENV=development 

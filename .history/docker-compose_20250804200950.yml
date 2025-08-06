@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: نظام-التأشيرات-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: نظام-التأشيرات
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: نظام-التأشيرات-server
+    restart: always
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/نظام-التأشيرات
+      PORT: 5000
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./server/uploads:/app/uploads
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: نظام-التأشيرات-client
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+    environment:
+      REACT_APP_API_URL: http://localhost:5000
+
+volumes:
+  mongodb_data: 
