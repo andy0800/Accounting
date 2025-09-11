@@ -19,6 +19,11 @@ import {
   AccountBalance as AccountIcon,
   Menu as MenuIcon,
   Add as AddIcon,
+  Home as HomeIcon,
+  Business as BusinessIcon,
+  Apartment as ApartmentIcon,
+  Description,
+  Assessment,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -30,10 +35,20 @@ const Navigation: React.FC = () => {
   const location = useLocation();
 
   const menuItems = [
-    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/' },
-    { text: 'السكرتارية', icon: <PeopleIcon />, path: '/secretaries' },
-    { text: 'التأشيرات', icon: <VisaIcon />, path: '/visas' },
-    { text: 'الحسابات', icon: <AccountIcon />, path: '/accounts' },
+    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/', section: 'main' },
+    { text: 'السكرتارية', icon: <PeopleIcon />, path: '/secretaries', section: 'visa' },
+    { text: 'التأشيرات', icon: <VisaIcon />, path: '/visas', section: 'visa' },
+    { text: 'الحسابات', icon: <AccountIcon />, path: '/accounts', section: 'visa' },
+    { text: 'تأشيرة جديدة', icon: <AddIcon />, path: '/visas/new', section: 'visa' },
+  ];
+
+  const rentingMenuItems = [
+    { text: 'نظام التأجير', icon: <HomeIcon />, path: '/renting', section: 'renting' },
+    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/renting/secretaries', section: 'renting' },
+    { text: 'الوحدات المؤجرة', icon: <ApartmentIcon />, path: '/renting/units', section: 'renting' },
+    { text: 'عقود التأجير', icon: <Description />, path: '/renting/contracts', section: 'renting' },
+    { text: 'العقود المنتهية', icon: <Description />, path: '/renting/terminated', section: 'renting' },
+    { text: 'التقارير', icon: <Assessment />, path: '/renting/reports', section: 'renting' },
   ];
 
   const handleDrawerToggle = () => {
@@ -53,6 +68,8 @@ const Navigation: React.FC = () => {
         </Typography>
       </Toolbar>
       <Divider />
+      
+      {/* Main System */}
       <List>
         {menuItems.map((item) => (
           <ListItem
@@ -66,19 +83,37 @@ const Navigation: React.FC = () => {
           </ListItem>
         ))}
       </List>
+      
       <Divider />
+      
+      {/* Renting System Section */}
       <List>
-        <ListItem
-          button
-          onClick={() => handleNavigation('/visas/new')}
-          sx={{ color: 'primary.main' }}
-        >
-          <ListItemIcon sx={{ color: 'primary.main' }}>
-            <AddIcon />
-          </ListItemIcon>
-          <ListItemText primary="تأشيرة جديدة" />
+        <ListItem sx={{ py: 1 }}>
+          <ListItemText 
+            primary="نظام التأجير" 
+            primaryTypographyProps={{ 
+              variant: 'subtitle2', 
+              color: 'primary.main',
+              fontWeight: 'bold',
+              sx: { textAlign: 'center' }
+            }} 
+          />
         </ListItem>
+        {rentingMenuItems.map((item) => (
+          <ListItem
+            button
+            key={item.text}
+            onClick={() => handleNavigation(item.path)}
+            selected={location.pathname === item.path}
+            sx={{ pl: 3 }}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
       </List>
+      
+
     </Box>
   );
 

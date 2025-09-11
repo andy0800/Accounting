@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -25,8 +25,6 @@ import {
 import {
   Add as AddIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   FileDownload as ExportIcon,
   FilterList as FilterIcon
 } from '@mui/icons-material';
@@ -63,20 +61,7 @@ const Visas: React.FC = () => {
     fetchVisas();
   }, []);
 
-  useEffect(() => {
-    filterVisas();
-  }, [visas, statusFilter, stageFilter]);
-
-  const fetchVisas = async () => {
-    try {
-      const response = await axios.get('/api/visas');
-      setVisas(response.data);
-    } catch (error) {
-      console.error('خطأ في جلب التأشيرات:', error);
-    }
-  };
-
-  const filterVisas = () => {
+  const filterVisas = useCallback(() => {
     let filtered = visas;
 
     if (statusFilter !== 'الكل') {
@@ -88,6 +73,19 @@ const Visas: React.FC = () => {
     }
 
     setFilteredVisas(filtered);
+  }, [visas, statusFilter, stageFilter]);
+
+  useEffect(() => {
+    filterVisas();
+  }, [visas, statusFilter, stageFilter, filterVisas]);
+
+  const fetchVisas = async () => {
+    try {
+      const response = await axios.get('/api/visas');
+      setVisas(response.data);
+    } catch (error) {
+      console.error('خطأ في جلب التأشيرات:', error);
+    }
   };
 
   const handleViewVisa = (id: string) => {

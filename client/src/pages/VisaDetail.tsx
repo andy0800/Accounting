@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -24,26 +24,16 @@ import {
   TableHead,
   TableRow,
   Paper,
-  IconButton,
-  Tooltip,
-  Divider,
   List,
   ListItem,
-  ListItemText,
-  ListItemIcon
+  ListItemText
 } from '@mui/material';
 import {
-  Edit as EditIcon,
   Add as AddIcon,
-  Delete as DeleteIcon,
   CheckCircle as CheckIcon,
-  Warning as WarningIcon,
   AttachMoney as MoneyIcon,
-  Person as PersonIcon,
-  Description as DocumentIcon,
   FileDownload as DownloadIcon,
   Cancel as CancelIcon,
-  Refresh as RefreshIcon,
   SwapHoriz as ReplaceIcon,
   SkipNext as SkipNextIcon
 } from '@mui/icons-material';
@@ -167,14 +157,7 @@ const VisaDetail: React.FC = () => {
     secretaryProfitPercentage: ''
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchVisaDetails();
-      fetchSecretaries();
-    }
-  }, [id]);
-
-  const fetchVisaDetails = async () => {
+  const fetchVisaDetails = useCallback(async () => {
     try {
       const response = await axios.get(`/api/visas/${id}`);
       setVisa(response.data);
@@ -184,16 +167,23 @@ const VisaDetail: React.FC = () => {
       setError('خطأ في جلب تفاصيل التأشيرة');
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const fetchSecretaries = async () => {
+  const fetchSecretaries = useCallback(async () => {
     try {
       const response = await axios.get('/api/secretaries');
       setSecretaries(response.data);
     } catch (error) {
       console.error('خطأ في جلب السكرتارية:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (id) {
+      fetchVisaDetails();
+      fetchSecretaries();
+    }
+  }, [id, fetchVisaDetails, fetchSecretaries]);
 
   const handleAddExpense = async () => {
     try {
@@ -349,17 +339,6 @@ const VisaDetail: React.FC = () => {
       case 'معروضة_للبيع': return 'success';
       case 'مباعة': return 'info';
       case 'ملغاة': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case 'أ': return 'primary';
-      case 'ب': return 'secondary';
-      case 'ج': return 'info';
-      case 'د': return 'warning';
-      case 'مكتملة': return 'success';
       default: return 'default';
     }
   };

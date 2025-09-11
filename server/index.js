@@ -42,6 +42,13 @@ app.use('/api/visas', require('./routes/visas'));
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/exports', require('./routes/exports'));
 
+// Renting System Routes
+app.use('/api/renting-secretaries', require('./routes/renting-secretaries'));
+app.use('/api/rental-units', require('./routes/rental-units'));
+app.use('/api/rental-contracts', require('./routes/rental-contracts'));
+app.use('/api/rental-payments', require('./routes/rental-payments'));
+app.use('/api/renting-reports', require('./routes/renting-reports'));
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

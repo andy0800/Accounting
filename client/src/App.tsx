@@ -13,6 +13,17 @@ import Visas from './pages/Visas';
 import VisaDetail from './pages/VisaDetail';
 import NewVisa from './pages/NewVisa';
 import Accounts from './pages/Accounts';
+import RentingDashboard from './pages/RentingDashboard';
+import RentingSecretaries from './pages/RentingSecretaries';
+import RentalUnits from './pages/RentalUnits';
+import RentalContracts from './pages/RentalContracts';
+import NewRentalUnit from './pages/NewRentalUnit';
+import NewRentalContract from './pages/NewRentalContract';
+import NewRentingSecretary from './pages/NewRentingSecretary';
+import TerminatedRentals from './pages/TerminatedRentals';
+import RentalDetail from './pages/RentalDetail';
+import RentalPayments from './pages/RentalPayments';
+import RentingReports from './pages/RentingReports';
 
 
 // Create rtl cache
@@ -201,6 +212,19 @@ function App() {
                 <Route path="/visas/:id" element={<VisaDetail />} />
                 <Route path="/visas/new" element={<NewVisa />} />
                 <Route path="/accounts" element={<Accounts />} />
+                
+                {/* Renting System Routes */}
+                <Route path="/renting" element={<RentingDashboard />} />
+                <Route path="/renting/secretaries" element={<RentingSecretaries />} />
+                <Route path="/renting/secretaries/new" element={<NewRentingSecretary />} />
+                <Route path="/renting/units" element={<RentalUnits />} />
+                <Route path="/renting/units/new" element={<NewRentalUnit />} />
+                <Route path="/renting/contracts" element={<RentalContracts />} />
+                <Route path="/renting/contracts/new" element={<NewRentalContract />} />
+                <Route path="/renting/contracts/:id" element={<RentalDetail />} />
+                <Route path="/renting/payments/:id" element={<RentalPayments />} />
+                <Route path="/renting/terminated" element={<TerminatedRentals />} />
+                <Route path="/renting/reports" element={<RentingReports />} />
 
               </Routes>
             </Container>
