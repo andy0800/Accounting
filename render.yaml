@@ -1,0 +1,45 @@
+# Render deployment configuration for Arabic Visa Management System
+
+services:
+  # Backend Service
+  - type: web
+    name: fursatkum-backend
+    env: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: fursatkum-mongodb
+          property: connectionString
+      - key: JWT_SECRET
+        value: 1f8bdb5f7d73b5a423069d428e4bf95fc391b320e7eec411b5d534dcf54b0097
+      - key: CORS_ORIGIN
+        value: https://fursatkum-frontend.onrender.com
+      - key: FRONTEND_URL
+        value: https://fursatkum-frontend.onrender.com
+    healthCheckPath: /api/health
+
+  # Frontend Service
+  - type: web
+    name: fursatkum-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://fursatkum-backend.onrender.com
+      - key: REACT_APP_ENV
+        value: production
+
+  # MongoDB Database
+  - type: pserv
+    name: fursatkum-mongodb
+    env: mongodb
+    plan: free
+    region: oregon

@@ -7,8 +7,8 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://your-app-name.onrender.com",
-      "description": "Replace with your actual Render URL"
+      "value": "https://fursatkum-backend.onrender.com",
+      "description": "Production backend URL"
     }
   ],
   "item": [

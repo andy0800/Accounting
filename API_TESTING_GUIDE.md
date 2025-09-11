@@ -1,9 +1,9 @@
 # 🧪 API Testing Guide for Arabic Visa Management System
 
 ## 📋 Overview
-This guide provides comprehensive API tests for your deployed backend on Render. Replace `YOUR_RENDER_URL` with your actual Render deployment URL.
+This guide provides comprehensive API tests for your deployed backend on Render.
 
-**Base URL**: `https://your-app-name.onrender.com`
+**Base URL**: `https://fursatkum-backend.onrender.com`
 
 ---
 

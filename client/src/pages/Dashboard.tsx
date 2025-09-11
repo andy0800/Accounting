@@ -24,7 +24,7 @@ import {
   Schedule,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../config/axios';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardData {
@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('/api/accounts/summary');
+      const response = await apiClient.get('/api/accounts/summary');
       setData(response.data);
     } catch (error) {
       console.error('خطأ في جلب بيانات لوحة التحكم:', error);

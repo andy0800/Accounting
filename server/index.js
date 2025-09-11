@@ -19,11 +19,12 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'http://localhost:3000',           // Development frontend
-      'http://localhost:3001',           // Alternative dev port
-      'https://your-frontend-domain.com', // Production frontend (replace with actual domain)
-      process.env.CORS_ORIGIN,           // From environment variable
-      process.env.FRONTEND_URL           // Alternative environment variable
+      'http://localhost:3000',                    // Development frontend
+      'http://localhost:3001',                    // Alternative dev port
+      'https://fursatkum-frontend.onrender.com',  // Production frontend
+      'https://fursatkum-backend.onrender.com',   // Production backend (for internal API calls)
+      process.env.CORS_ORIGIN,                    // From environment variable
+      process.env.FRONTEND_URL                    // Alternative environment variable
     ].filter(Boolean); // Remove undefined values
     
     if (allowedOrigins.includes(origin)) {

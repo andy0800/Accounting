@@ -7,7 +7,8 @@ Your server now has **secure CORS configuration** that only allows specific doma
 ### ✅ **Allowed Origins (by default):**
 - `http://localhost:3000` - Development frontend
 - `http://localhost:3001` - Alternative dev port
-- `https://your-frontend-domain.com` - Production frontend (replace with actual domain)
+- `https://fursatkum-frontend.onrender.com` - Production frontend
+- `https://fursatkum-backend.onrender.com` - Production backend (for internal API calls)
 - `process.env.CORS_ORIGIN` - From environment variable
 - `process.env.FRONTEND_URL` - Alternative environment variable
 
@@ -22,14 +23,28 @@ curl -H "Origin: http://localhost:3000" \
      -H "Access-Control-Request-Method: GET" \
      -H "Access-Control-Request-Headers: X-Requested-With" \
      -X OPTIONS \
-     https://your-app-name.onrender.com/api/health
+     https://fursatkum-backend.onrender.com/api/health
 
 # Test localhost:3001 (alternative dev)
 curl -H "Origin: http://localhost:3001" \
      -H "Access-Control-Request-Method: GET" \
      -H "Access-Control-Request-Headers: X-Requested-With" \
      -X OPTIONS \
-     https://your-app-name.onrender.com/api/health
+     https://fursatkum-backend.onrender.com/api/health
+
+# Test production frontend
+curl -H "Origin: https://fursatkum-frontend.onrender.com" \
+     -H "Access-Control-Request-Method: GET" \
+     -H "Access-Control-Request-Headers: X-Requested-With" \
+     -X OPTIONS \
+     https://fursatkum-backend.onrender.com/api/health
+
+# Test production backend (internal calls)
+curl -H "Origin: https://fursatkum-backend.onrender.com" \
+     -H "Access-Control-Request-Method: GET" \
+     -H "Access-Control-Request-Headers: X-Requested-With" \
+     -X OPTIONS \
+     https://fursatkum-backend.onrender.com/api/health
 ```
 
 ### 2. Test Blocked Origins (Should Fail)
