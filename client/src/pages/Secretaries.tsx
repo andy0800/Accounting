@@ -40,7 +40,7 @@ import {
   Business as BusinessIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../config/axios';
 
 interface Secretary {
   _id: string;
@@ -87,7 +87,7 @@ const Secretaries: React.FC = () => {
 
   const fetchSecretaries = async () => {
     try {
-      const response = await axios.get('/api/secretaries');
+      const response = await apiClient.get('/api/secretaries');
       setSecretaries(response.data);
       
       // Fetch rental information for each secretary
@@ -108,7 +108,7 @@ const Secretaries: React.FC = () => {
       for (const secretary of secretariesList) {
         try {
           // Fetch rental units for this secretary
-          const rentalResponse = await axios.get(`/api/rental-units/secretary/${secretary._id}`);
+          const rentalResponse = await apiClient.get(`/api/rental-units/secretary/${secretary._id}`);
           rentalData[secretary._id] = rentalResponse.data || [];
         } catch (err) {
           console.error(`Error fetching rental data for secretary ${secretary._id}:`, err);
@@ -124,7 +124,7 @@ const Secretaries: React.FC = () => {
 
   const handleAddSecretary = async () => {
     try {
-      await axios.post('/api/secretaries', newSecretary);
+      await apiClient.post('/api/secretaries', newSecretary);
       setAddDialog(false);
       setNewSecretary({ name: '', email: '', phone: '' });
       setSuccess('تم إضافة السكرتيرة بنجاح');
@@ -137,7 +137,7 @@ const Secretaries: React.FC = () => {
   const handleDeleteSecretary = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذه السكرتيرة؟')) {
       try {
-        await axios.delete(`/api/secretaries/${id}`);
+        await apiClient.delete(`/api/secretaries/${id}`);
         setSuccess('تم حذف السكرتيرة بنجاح');
         fetchSecretaries();
       } catch (error: any) {
@@ -148,7 +148,7 @@ const Secretaries: React.FC = () => {
 
   const handleExportSecretary = async (id: string) => {
     try {
-      const response = await axios.get(`/api/exports/secretary/${id}`, {
+      const response = await apiClient.get(`/api/exports/secretary/${id}`, {
         responseType: 'blob'
       });
       

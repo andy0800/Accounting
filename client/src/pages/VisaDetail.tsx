@@ -42,7 +42,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { enUS } from 'date-fns/locale';
-import axios from 'axios';
+import apiClient from '../config/axios';
 
 interface Visa {
   _id: string;
@@ -159,7 +159,7 @@ const VisaDetail: React.FC = () => {
 
   const fetchVisaDetails = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/visas/${id}`);
+      const response = await apiClient.get(`/api/visas/${id}`);
       setVisa(response.data);
       setLoading(false);
     } catch (error) {
@@ -171,7 +171,7 @@ const VisaDetail: React.FC = () => {
 
   const fetchSecretaries = useCallback(async () => {
     try {
-      const response = await axios.get('/api/secretaries');
+      const response = await apiClient.get('/api/secretaries');
       setSecretaries(response.data);
     } catch (error) {
       console.error('خطأ في جلب السكرتارية:', error);
@@ -187,7 +187,7 @@ const VisaDetail: React.FC = () => {
 
   const handleAddExpense = async () => {
     try {
-      await axios.post(`/api/visas/${id}/expenses`, {
+      await apiClient.post(`/api/visas/${id}/expenses`, {
         ...expenseData,
         stage: currentStage,
         date: expenseData.date.toISOString()
@@ -211,7 +211,7 @@ const VisaDetail: React.FC = () => {
         'د': `/api/visas/${id}/complete-stage-d`
       };
 
-      await axios.put(stageEndpoints[stage as keyof typeof stageEndpoints]);
+      await apiClient.put(stageEndpoints[stage as keyof typeof stageEndpoints]);
       
       if (stage === 'د') {
         setSuccess('تم إكمال جميع المراحل وتحويل التأشيرة لقسم البيع بنجاح');
@@ -239,7 +239,7 @@ const VisaDetail: React.FC = () => {
         sellPayload.sellingCommission = parseFloat(sellData.sellingCommission);
       }
 
-      await axios.put(`/api/visas/${id}/sell`, sellPayload);
+      await apiClient.put(`/api/visas/${id}/sell`, sellPayload);
       
       setSellDialog(false);
       setSellData({ 
@@ -258,7 +258,7 @@ const VisaDetail: React.FC = () => {
 
   const handleCancelVisa = async () => {
     try {
-      await axios.put(`/api/visas/${id}/cancel`, {
+      await apiClient.put(`/api/visas/${id}/cancel`, {
         reason: cancelReason
       });
       
@@ -287,7 +287,7 @@ const VisaDetail: React.FC = () => {
       formData.append('visaDeadline', replaceData.visaDeadline.toISOString());
       formData.append('secretaryProfitPercentage', replaceData.secretaryProfitPercentage);
 
-      const response = await axios.post(`/api/visas/${id}/replace`, formData, {
+      const response = await apiClient.post(`/api/visas/${id}/replace`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -317,7 +317,7 @@ const VisaDetail: React.FC = () => {
 
   const handleExportExpenses = async () => {
     try {
-      const response = await axios.get(`/api/exports/expenses/${id}`, {
+      const response = await apiClient.get(`/api/exports/expenses/${id}`, {
         responseType: 'blob'
       });
       

@@ -29,7 +29,7 @@ import {
   FilterList as FilterIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../config/axios';
 
 interface Visa {
   _id: string;
@@ -81,7 +81,7 @@ const Visas: React.FC = () => {
 
   const fetchVisas = async () => {
     try {
-      const response = await axios.get('/api/visas');
+      const response = await apiClient.get('/api/visas');
       setVisas(response.data);
     } catch (error) {
       console.error('خطأ في جلب التأشيرات:', error);
@@ -95,7 +95,7 @@ const Visas: React.FC = () => {
   const handleExport = async (status?: string) => {
     try {
       const url = status ? `/api/exports/visas/${status}` : '/api/exports/visas/all';
-      const response = await axios.get(url, { responseType: 'blob' });
+      const response = await apiClient.get(url, { responseType: 'blob' });
       
       const url2 = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');

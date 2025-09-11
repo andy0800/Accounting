@@ -35,7 +35,7 @@ import {
   FileDownload as ExportIcon
 } from '@mui/icons-material';
 
-import axios from 'axios';
+import apiClient from '../config/axios';
 
 interface CompanyAccount {
   name: string;
@@ -151,8 +151,8 @@ const Accounts: React.FC = () => {
   const fetchAccounts = async () => {
     try {
       const [companyResponse, secretariesResponse] = await Promise.all([
-        axios.get('/api/accounts/company'),
-        axios.get('/api/accounts/secretaries')
+        apiClient.get('/api/accounts/company'),
+        apiClient.get('/api/accounts/secretaries')
       ]);
 
       setCompanyAccount(companyResponse.data);
@@ -167,7 +167,7 @@ const Accounts: React.FC = () => {
 
   const handleExportCompanyReport = async () => {
     try {
-      const response = await axios.get('/api/exports/company-report', {
+      const response = await apiClient.get('/api/exports/company-report', {
         responseType: 'blob'
       });
       

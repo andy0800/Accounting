@@ -24,7 +24,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { enUS } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../config/axios';
 
 interface Secretary {
   _id: string;
@@ -62,7 +62,7 @@ const NewVisa: React.FC = () => {
 
   const fetchSecretaries = async () => {
     try {
-      const response = await axios.get('/api/secretaries');
+      const response = await apiClient.get('/api/secretaries');
       setSecretaries(response.data);
     } catch (error) {
       console.error('خطأ في جلب السكرتارية:', error);
@@ -138,7 +138,7 @@ const NewVisa: React.FC = () => {
         }
       });
 
-      const response = await axios.post('/api/visas', formDataToSend, {
+      const response = await apiClient.post('/api/visas', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
