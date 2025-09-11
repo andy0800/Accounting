@@ -1,0 +1,246 @@
+{
+  "info": {
+    "name": "Arabic Visa Management System API",
+    "description": "Complete API collection for testing the Arabic Visa Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://your-app-name.onrender.com",
+      "description": "Replace with your actual Render URL"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Secretaries",
+      "item": [
+        {
+          "name": "Get All Secretaries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/secretaries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secretaries"]
+            }
+          }
+        },
+        {
+          "name": "Create Secretary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"فاطمة أحمد\",\n  \"email\": \"fatima@example.com\",\n  \"phone\": \"+966501234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/secretaries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secretaries"]
+            }
+          }
+        },
+        {
+          "name": "Get Secretary by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/secretaries/{{secretaryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "secretaries", "{{secretaryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Visas",
+      "item": [
+        {
+          "name": "Get All Visas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/visas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "visas"]
+            }
+          }
+        },
+        {
+          "name": "Create Visa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"أحمد محمد علي\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"nationality\": \"مصري\",\n  \"passportNumber\": \"A1234567\",\n  \"visaNumber\": \"V7890123\",\n  \"secretaryId\": \"{{secretaryId}}\",\n  \"middlemanName\": \"محمد الوسيط\",\n  \"visaSponsor\": \"شركة الكفيل\",\n  \"visaIssueDate\": \"2024-01-01\",\n  \"visaExpiryDate\": \"2024-12-31\",\n  \"visaDeadline\": \"2024-02-15\",\n  \"secretaryProfitPercentage\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/visas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "visas"]
+            }
+          }
+        },
+        {
+          "name": "Add Expense to Visa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500,\n  \"description\": \"رسوم المرحلة أ\",\n  \"stage\": \"أ\",\n  \"date\": \"2024-01-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/visas/{{visaId}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "visas", "{{visaId}}", "expenses"]
+            }
+          }
+        },
+        {
+          "name": "Complete Stage A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stageACompleted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/visas/{{visaId}}/stage-a",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "visas", "{{visaId}}", "stage-a"]
+            }
+          }
+        },
+        {
+          "name": "Sell Visa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sellingPrice\": 5000,\n  \"customerName\": \"سالم العميل\",\n  \"customerPhone\": \"+966501234569\",\n  \"sellingSecretary\": \"{{secretaryId}}\",\n  \"sellingCommission\": 200\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/visas/{{visaId}}/sell",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "visas", "{{visaId}}", "sell"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "Get Company Account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/company",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "company"]
+            }
+          }
+        },
+        {
+          "name": "Get Financial Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rental System",
+      "item": [
+        {
+          "name": "Get Rental Units",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rental-units",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rental-units"]
+            }
+          }
+        },
+        {
+          "name": "Create Rental Unit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitType\": \"شقة\",\n  \"unitNumber\": \"A-101\",\n  \"address\": \"شارع الملك فهد، الرياض\",\n  \"monthlyRent\": 3000,\n  \"description\": \"شقة 3 غرف نوم\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rental-units",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rental-units"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
