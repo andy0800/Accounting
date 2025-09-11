@@ -7,6 +7,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET not found in environment variables. Using default secret (NOT RECOMMENDED FOR PRODUCTION)');
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
