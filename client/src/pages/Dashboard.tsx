@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
     { name: 'متاحة', value: data.availableVisas, color: COLORS[1] },
     { name: 'مباعة', value: data.soldVisas, color: COLORS[2] },
     { name: 'ملغاة', value: data.cancelledVisas, color: COLORS[3] },
-  ] : [], [data]);
+  ] : [], [data, COLORS]);
 
   const barData = useMemo(() => data ? [
     { name: 'إجمالي المصروفات', value: data.totalExpenses },
