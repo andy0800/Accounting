@@ -51,6 +51,12 @@ const secretarySchema = new mongoose.Schema({
   }
 });
 
+// إضافة فهارس قاعدة البيانات لتحسين الأداء
+secretarySchema.index({ code: 1 }); // فهرس على رمز السكرتيرة
+secretarySchema.index({ name: 1 }); // فهرس على اسم السكرتيرة
+secretarySchema.index({ email: 1 }); // فهرس على البريد الإلكتروني
+secretarySchema.index({ createdAt: -1 }); // فهرس على تاريخ الإنشاء
+
 // توليد رمز من حرفين من الاسم
 secretarySchema.pre('save', function(next) {
   if (!this.code) {

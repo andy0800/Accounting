@@ -12,9 +12,31 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor
+// Simple in-memory cache for API responses
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Request interceptor with cache check
 apiClient.interceptors.request.use(
   (config) => {
+    // Check cache for GET requests
+    if (config.method === 'get') {
+      const cacheKey = config.url;
+      const cached = cache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        console.log(`📦 Cache hit: ${config.url}`);
+        return Promise.resolve({
+          ...config,
+          data: cached.data,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config
+        });
+      }
+    }
+    
     // Add any auth tokens here if needed
     // const token = localStorage.getItem('token');
     // if (token) {
@@ -30,10 +52,20 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Response interceptor with caching
 apiClient.interceptors.response.use(
   (response) => {
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
+    
+    // Cache GET requests for 5 minutes
+    if (response.config.method === 'get' && response.status === 200) {
+      const cacheKey = response.config.url;
+      cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now()
+      });
+    }
+    
     return response;
   },
   (error) => {

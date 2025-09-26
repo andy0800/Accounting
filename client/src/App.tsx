@@ -1,29 +1,31 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Box, Container, ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { Box, Container, ThemeProvider, createTheme, CssBaseline, CircularProgress } from '@mui/material';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import Navigation from './components/Navigation';
-import Dashboard from './pages/Dashboard';
-import Secretaries from './pages/Secretaries';
-import SecretaryDetail from './pages/SecretaryDetail';
-import Visas from './pages/Visas';
-import VisaDetail from './pages/VisaDetail';
-import NewVisa from './pages/NewVisa';
-import Accounts from './pages/Accounts';
-import RentingDashboard from './pages/RentingDashboard';
-import RentingSecretaries from './pages/RentingSecretaries';
-import RentalUnits from './pages/RentalUnits';
-import RentalContracts from './pages/RentalContracts';
-import NewRentalUnit from './pages/NewRentalUnit';
-import NewRentalContract from './pages/NewRentalContract';
-import NewRentingSecretary from './pages/NewRentingSecretary';
-import TerminatedRentals from './pages/TerminatedRentals';
-import RentalDetail from './pages/RentalDetail';
-import RentalPayments from './pages/RentalPayments';
-import RentingReports from './pages/RentingReports';
+
+// Lazy load all components for code splitting
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Secretaries = React.lazy(() => import('./pages/Secretaries'));
+const SecretaryDetail = React.lazy(() => import('./pages/SecretaryDetail'));
+const Visas = React.lazy(() => import('./pages/Visas'));
+const VisaDetail = React.lazy(() => import('./pages/VisaDetail'));
+const NewVisa = React.lazy(() => import('./pages/NewVisa'));
+const Accounts = React.lazy(() => import('./pages/Accounts'));
+const RentingDashboard = React.lazy(() => import('./pages/RentingDashboard'));
+const RentingSecretaries = React.lazy(() => import('./pages/RentingSecretaries'));
+const RentalUnits = React.lazy(() => import('./pages/RentalUnits'));
+const RentalContracts = React.lazy(() => import('./pages/RentalContracts'));
+const NewRentalUnit = React.lazy(() => import('./pages/NewRentalUnit'));
+const NewRentalContract = React.lazy(() => import('./pages/NewRentalContract'));
+const NewRentingSecretary = React.lazy(() => import('./pages/NewRentingSecretary'));
+const TerminatedRentals = React.lazy(() => import('./pages/TerminatedRentals'));
+const RentalDetail = React.lazy(() => import('./pages/RentalDetail'));
+const RentalPayments = React.lazy(() => import('./pages/RentalPayments'));
+const RentingReports = React.lazy(() => import('./pages/RentingReports'));
 
 
 // Create rtl cache
@@ -195,6 +197,52 @@ const theme = createTheme({
   },
 });
 
+// Loading component for Suspense fallback
+const LoadingSpinner = () => (
+  <Box 
+    sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '200px' 
+    }}
+  >
+    <CircularProgress />
+  </Box>
+);
+
+// Error boundary component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <h2>حدث خطأ في التطبيق</h2>
+          <p>يرجى تحديث الصفحة أو العودة إلى الصفحة الرئيسية</p>
+          <button onClick={() => window.location.href = '/'}>
+            العودة إلى الصفحة الرئيسية
+          </button>
+        </Box>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function App() {
   return (
     <CacheProvider value={cacheRtl}>
@@ -204,29 +252,43 @@ function App() {
           <Navigation />
           <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
             <Container maxWidth="xl">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/secretaries" element={<Secretaries />} />
-                <Route path="/secretaries/:id" element={<SecretaryDetail />} />
-                <Route path="/visas" element={<Visas />} />
-                <Route path="/visas/:id" element={<VisaDetail />} />
-                <Route path="/visas/new" element={<NewVisa />} />
-                <Route path="/accounts" element={<Accounts />} />
-                
-                {/* Renting System Routes */}
-                <Route path="/renting" element={<RentingDashboard />} />
-                <Route path="/renting/secretaries" element={<RentingSecretaries />} />
-                <Route path="/renting/secretaries/new" element={<NewRentingSecretary />} />
-                <Route path="/renting/units" element={<RentalUnits />} />
-                <Route path="/renting/units/new" element={<NewRentalUnit />} />
-                <Route path="/renting/contracts" element={<RentalContracts />} />
-                <Route path="/renting/contracts/new" element={<NewRentalContract />} />
-                <Route path="/renting/contracts/:id" element={<RentalDetail />} />
-                <Route path="/renting/payments/:id" element={<RentalPayments />} />
-                <Route path="/renting/terminated" element={<TerminatedRentals />} />
-                <Route path="/renting/reports" element={<RentingReports />} />
-
-              </Routes>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/secretaries" element={<Secretaries />} />
+                    <Route path="/secretaries/:id" element={<SecretaryDetail />} />
+                    <Route path="/visas" element={<Visas />} />
+                    <Route path="/visas/:id" element={<VisaDetail />} />
+                    <Route path="/visas/new" element={<NewVisa />} />
+                    <Route path="/accounts" element={<Accounts />} />
+                    
+                    {/* Renting System Routes */}
+                    <Route path="/renting" element={<RentingDashboard />} />
+                    <Route path="/renting/secretaries" element={<RentingSecretaries />} />
+                    <Route path="/renting/secretaries/new" element={<NewRentingSecretary />} />
+                    <Route path="/renting/units" element={<RentalUnits />} />
+                    <Route path="/renting/units/new" element={<NewRentalUnit />} />
+                    <Route path="/renting/contracts" element={<RentalContracts />} />
+                    <Route path="/renting/contracts/new" element={<NewRentalContract />} />
+                    <Route path="/renting/contracts/:id" element={<RentalDetail />} />
+                    <Route path="/renting/payments/:id" element={<RentalPayments />} />
+                    <Route path="/renting/terminated" element={<TerminatedRentals />} />
+                    <Route path="/renting/reports" element={<RentingReports />} />
+                    
+                    {/* Fallback route for 404 errors */}
+                    <Route path="*" element={
+                      <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <h2>الصفحة غير موجودة</h2>
+                        <p>الصفحة التي تبحث عنها غير موجودة</p>
+                        <button onClick={() => window.location.href = '/'}>
+                          العودة إلى الصفحة الرئيسية
+                        </button>
+                      </Box>
+                    } />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </Container>
           </Box>
         </Box>

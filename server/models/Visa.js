@@ -224,6 +224,14 @@ visaSchema.pre('save', function(next) {
   next();
 });
 
+// إضافة فهارس قاعدة البيانات لتحسين الأداء
+visaSchema.index({ status: 1 }); // فهرس على حالة التأشيرة
+visaSchema.index({ currentStage: 1 }); // فهرس على المرحلة الحالية
+visaSchema.index({ secretary: 1 }); // فهرس على السكرتيرة
+visaSchema.index({ createdAt: -1 }); // فهرس على تاريخ الإنشاء (ترتيب تنازلي)
+visaSchema.index({ status: 1, currentStage: 1 }); // فهرس مركب للحالة والمرحلة
+visaSchema.index({ secretary: 1, status: 1 }); // فهرس مركب للسكرتيرة والحالة
+
 // حساب إجمالي المصروفات
 visaSchema.methods.calculateTotalExpenses = function() {
   const stageA = this.stageAExpenses.reduce((sum, exp) => sum + exp.amount, 0);

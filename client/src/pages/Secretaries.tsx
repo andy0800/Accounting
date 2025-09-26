@@ -105,16 +105,24 @@ const Secretaries: React.FC = () => {
     try {
       const rentalData: { [secretaryId: string]: RentalUnit[] } = {};
       
-      for (const secretary of secretariesList) {
+      // Parallelize API calls using Promise.all for better performance
+      const rentalPromises = secretariesList.map(async (secretary) => {
         try {
-          // Fetch rental units for this secretary
           const rentalResponse = await apiClient.get(`/api/rental-units/secretary/${secretary._id}`);
-          rentalData[secretary._id] = rentalResponse.data || [];
+          return { secretaryId: secretary._id, data: rentalResponse.data || [] };
         } catch (err) {
           console.error(`Error fetching rental data for secretary ${secretary._id}:`, err);
-          rentalData[secretary._id] = [];
+          return { secretaryId: secretary._id, data: [] };
         }
-      }
+      });
+      
+      // Wait for all rental data to be fetched in parallel
+      const rentalResults = await Promise.all(rentalPromises);
+      
+      // Process results
+      rentalResults.forEach(({ secretaryId, data }) => {
+        rentalData[secretaryId] = data;
+      });
       
       setRentalUnits(rentalData);
     } catch (err) {

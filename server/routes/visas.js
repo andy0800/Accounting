@@ -68,24 +68,44 @@ const checkOverdueVisas = async () => {
   }
 };
 
-// الحصول على جميع التأشيرات مع الفلترة
+// الحصول على جميع التأشيرات مع الفلترة والترقيم
 router.get('/', async (req, res) => {
   try {
     // التحقق من التأشيرات المتأخرة أولاً
     await checkOverdueVisas();
     
-    const { status, stage, secretary } = req.query;
+    const { status, stage, secretary, page = 1, limit = 20 } = req.query;
     let filter = {};
     
     if (status) filter.status = status;
     if (stage) filter.currentStage = stage;
     if (secretary) filter.secretary = secretary;
     
-    const visas = await Visa.find(filter)
-      .populate('secretary', 'name code')
-      .sort({ createdAt: -1 });
+    // حساب الترقيم
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
     
-    res.json(visas);
+    // جلب البيانات مع الترقيم
+    const [visas, totalCount] = await Promise.all([
+      Visa.find(filter)
+        .populate('secretary', 'name code')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Visa.countDocuments(filter)
+    ]);
+    
+    res.json({
+      visas,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalCount,
+        hasNextPage: pageNum < Math.ceil(totalCount / limitNum),
+        hasPrevPage: pageNum > 1
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

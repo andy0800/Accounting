@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Grid,
   Card,
@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../config/axios';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardData {
@@ -64,22 +65,46 @@ const Dashboard: React.FC = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  const pieData = data ? [
+  const pieData = useMemo(() => data ? [
     { name: 'نشطة', value: data.activeVisas, color: COLORS[0] },
     { name: 'متاحة', value: data.availableVisas, color: COLORS[1] },
     { name: 'مباعة', value: data.soldVisas, color: COLORS[2] },
     { name: 'ملغاة', value: data.cancelledVisas, color: COLORS[3] },
-  ] : [];
+  ] : [], [data]);
 
-  const barData = data ? [
+  const barData = useMemo(() => data ? [
     { name: 'إجمالي المصروفات', value: data.totalExpenses },
     { name: 'إجمالي الربح', value: data.totalProfit },
     { name: 'أرباح السكرتارية', value: data.totalSecretaryEarnings },
     { name: 'ربح الشركة', value: data.totalCompanyProfit },
-  ] : [];
+  ] : [], [data]);
 
   if (loading) {
-    return <Typography>جاري تحميل لوحة التحكم...</Typography>;
+    return (
+      <Box>
+        <Typography variant="h4" sx={{ mb: 3 }}>لوحة التحكم</Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3}>
+            <LoadingSkeleton type="card" />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <LoadingSkeleton type="card" />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <LoadingSkeleton type="card" />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <LoadingSkeleton type="card" />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <LoadingSkeleton type="chart" />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <LoadingSkeleton type="chart" />
+          </Grid>
+        </Grid>
+      </Box>
+    );
   }
 
   if (!data) {
