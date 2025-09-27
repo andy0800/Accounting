@@ -68,8 +68,8 @@ const Dashboard: React.FC = () => {
         return;
       }
       
-      // Show user-friendly error message
-      setError('فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.');
+      // Log error but don't set error state since it was removed
+      console.error('فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -119,25 +119,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (!data && error) {
-    return (
-      <Box sx={{ textAlign: 'center', p: 3 }}>
-        <Typography variant="h6" color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => {
-            setError('');
-            setLoading(true);
-            fetchDashboardData();
-          }}
-        >
-          إعادة المحاولة
-        </Button>
-      </Box>
-    );
-  }
 
   if (!data) {
     return <Typography>خطأ في تحميل بيانات لوحة التحكم</Typography>;
