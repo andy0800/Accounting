@@ -6,6 +6,7 @@ import createCache from '@emotion/cache';
 import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import Navigation from './components/Navigation';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load all components for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -211,37 +212,6 @@ const LoadingSpinner = () => (
   </Box>
 );
 
-// Error boundary component
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: React.ReactNode}) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <h2>حدث خطأ في التطبيق</h2>
-          <p>يرجى تحديث الصفحة أو العودة إلى الصفحة الرئيسية</p>
-          <button onClick={() => window.location.href = '/'}>
-            العودة إلى الصفحة الرئيسية
-          </button>
-        </Box>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 function App() {
   return (

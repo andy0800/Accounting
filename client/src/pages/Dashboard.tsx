@@ -52,12 +52,24 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (retryCount = 0) => {
     try {
       const response = await apiClient.get('/api/accounts/summary');
       setData(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في جلب بيانات لوحة التحكم:', error);
+      
+      // Retry logic for timeout errors (Render free tier can be slow)
+      if (error.code === 'ECONNABORTED' && retryCount < 2) {
+        console.log(`🔄 Retrying request (attempt ${retryCount + 1}/2)...`);
+        setTimeout(() => {
+          fetchDashboardData(retryCount + 1);
+        }, 2000 * (retryCount + 1)); // Exponential backoff
+        return;
+      }
+      
+      // Show user-friendly error message
+      setError('فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -103,6 +115,26 @@ const Dashboard: React.FC = () => {
             <LoadingSkeleton type="chart" />
           </Grid>
         </Grid>
+      </Box>
+    );
+  }
+
+  if (!data && error) {
+    return (
+      <Box sx={{ textAlign: 'center', p: 3 }}>
+        <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => {
+            setError('');
+            setLoading(true);
+            fetchDashboardData();
+          }}
+        >
+          إعادة المحاولة
+        </Button>
       </Box>
     );
   }

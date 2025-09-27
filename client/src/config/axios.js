@@ -6,7 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://fursatkum-backend.onre
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 10000, // 10 seconds timeout
+  timeout: 30000, // 30 seconds timeout for Render free tier
   headers: {
     'Content-Type': 'application/json',
   },
@@ -71,6 +71,12 @@ apiClient.interceptors.response.use(
   (error) => {
     console.error('❌ Response Error:', error.response?.status, error.message);
     
+    // Handle timeout errors specifically
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.error('⏰ Request timeout - Backend may be sleeping (Render free tier)');
+      console.error('💡 Consider upgrading to paid tier or implementing retry logic');
+    }
+    
     // Handle specific error cases
     if (error.response?.status === 401) {
       // Handle unauthorized access
@@ -81,6 +87,9 @@ apiClient.interceptors.response.use(
     } else if (error.response?.status >= 500) {
       // Handle server errors
       console.error('🔥 Server error:', error.response.data);
+    } else if (!error.response) {
+      // Network error or server down
+      console.error('🌐 Network error - Backend may be down or unreachable');
     }
     
     return Promise.reject(error);
