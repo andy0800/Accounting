@@ -168,7 +168,7 @@ router.get('/company', async (req, res) => {
         sellingSecretary: visa.sellingSecretary || null,
         sellingCommission: visa.sellingCommission || 0
       };
-    }));
+    });
 
     // حساب الإحصائيات الشهرية والسنوية باستخدام تجميع قاعدة البيانات
     const currentYear = new Date().getFullYear();
