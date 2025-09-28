@@ -66,16 +66,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Database connection with optimization
 const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://andydaddy080:1s8trWSbR9J8rNkq@cluster0.g5rsvmu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-// Optimized MongoDB connection options
+// Optimized MongoDB connection options (compatible with MongoDB driver)
 const mongooseOptions = {
   maxPoolSize: 10, // Maintain up to 10 socket connections
   serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
   socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  bufferMaxEntries: 0, // Disable mongoose buffering
-  bufferCommands: false, // Disable mongoose buffering
   retryWrites: true,
   w: 'majority'
 };
+
+// Disable mongoose command buffering globally
+mongoose.set('bufferCommands', false);
 
 mongoose.connect(mongoUri, mongooseOptions);
 

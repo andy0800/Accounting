@@ -8,7 +8,6 @@ const secretarySchema = new mongoose.Schema({
   },
   code: {
     type: String,
-    unique: true,
     uppercase: true,
     maxlength: 2
   },
@@ -52,7 +51,8 @@ const secretarySchema = new mongoose.Schema({
 });
 
 // إضافة فهارس قاعدة البيانات لتحسين الأداء
-secretarySchema.index({ code: 1 }); // فهرس على رمز السكرتيرة
+// تأكد من عدم تكرار الفهرس مع unique
+secretarySchema.index({ code: 1 }, { unique: true }); // فهرس فريد على رمز السكرتيرة
 secretarySchema.index({ name: 1 }); // فهرس على اسم السكرتيرة
 secretarySchema.index({ email: 1 }); // فهرس على البريد الإلكتروني
 secretarySchema.index({ createdAt: -1 }); // فهرس على تاريخ الإنشاء
