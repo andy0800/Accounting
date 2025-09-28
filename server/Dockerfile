@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # تثبيت التبعيات
-RUN npm ci --only=production
+# استخدم --omit=dev بدلاً من only=production لضمان توافق npm الأحدث
+RUN npm ci --omit=dev
 
 # نسخ الكود المصدري
 COPY . .
