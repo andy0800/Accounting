@@ -167,9 +167,9 @@ export const usePerformanceMonitor = (componentName: string) => {
 };
 
 // Bundle size optimization utilities
-export const lazyImport = <T>(
+export const lazyImport = <T extends React.ComponentType<any>>(
   importFunction: () => Promise<{ default: T }>
-): React.LazyExoticComponent<React.ComponentType<T>> => {
+): React.LazyExoticComponent<T> => {
   return React.lazy(importFunction);
 };
 
