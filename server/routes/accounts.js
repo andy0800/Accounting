@@ -18,22 +18,82 @@ router.get('/company', async (req, res) => {
       await companyAccount.save();
     }
 
-    // حساب الإحصائيات الفورية
-    const allVisas = await Visa.find();
-    const soldVisas = allVisas.filter(v => v.status === 'مباعة');
-    const cancelledVisas = allVisas.filter(v => v.status === 'ملغاة');
-    const activeVisas = allVisas.filter(v => v.status === 'قيد_الشراء');
-    const availableVisas = allVisas.filter(v => v.status === 'معروضة_للبيع');
+    // حساب الإحصائيات باستخدام تجميع قاعدة البيانات (أسرع بكثير)
+    const stats = await Visa.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalVisas: { $sum: 1 },
+          totalExpenses: { $sum: "$totalExpenses" },
+          soldVisas: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "مباعة"] }, 1, 0]
+            }
+          },
+          cancelledVisas: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "ملغاة"] }, 1, 0]
+            }
+          },
+          activeVisas: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "قيد_الشراء"] }, 1, 0]
+            }
+          },
+          availableVisas: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "معروضة_للبيع"] }, 1, 0]
+            }
+          },
+          totalProfit: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "مباعة"] },
+                { $subtract: ["$profit", "$secretaryEarnings"] },
+                0
+              ]
+            }
+          },
+          totalSecretaryEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "مباعة"] },
+                "$secretaryEarnings",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
 
-    const totalExpenses = allVisas.reduce((sum, visa) => sum + visa.totalExpenses, 0);
-    const totalProfit = soldVisas.reduce((sum, visa) => sum + (visa.profit - visa.secretaryEarnings), 0);
-    const totalVisasBought = allVisas.length;
-    const totalVisasSold = soldVisas.length;
-    const totalVisasCancelled = cancelledVisas.length;
-    const totalActiveVisas = activeVisas.length + availableVisas.length;
+    const statsData = stats[0] || {
+      totalVisas: 0,
+      totalExpenses: 0,
+      soldVisas: 0,
+      cancelledVisas: 0,
+      activeVisas: 0,
+      availableVisas: 0,
+      totalProfit: 0,
+      totalSecretaryEarnings: 0
+    };
+
+    const totalVisasBought = statsData.totalVisas;
+    const totalVisasSold = statsData.soldVisas;
+    const totalVisasCancelled = statsData.cancelledVisas;
+    const totalActiveVisas = statsData.activeVisas + statsData.availableVisas;
+    const totalExpenses = statsData.totalExpenses;
+    const totalProfit = statsData.totalProfit;
+    const totalSecretaryEarnings = statsData.totalSecretaryEarnings;
     
+    // جلب تفاصيل التأشيرات المباعة فقط (محدود لتحسين الأداء)
+    const soldVisasDetails = await Visa.find({ status: 'مباعة' })
+      .populate('secretary', 'name code')
+      .select('_id secretaryCode orderNumber name secretary sellingPrice totalExpenses profit secretaryEarnings soldAt')
+      .limit(50); // تحديد عدد النتائج لتحسين الأداء
+
     // حساب ربح الشركة لكل تأشيرة مباعة
-    const companyProfitPerVisa = soldVisas.map(visa => ({
+    const companyProfitPerVisa = soldVisasDetails.map(visa => ({
       visaId: visa._id,
       reference: `${visa.secretaryCode}${visa.orderNumber.toString().padStart(3, '0')}`,
       name: visa.name,
@@ -50,9 +110,14 @@ router.get('/company', async (req, res) => {
       soldAt: visa.soldAt
     }));
 
+    // جلب جميع التأشيرات مع السكرتارية في استعلام واحد (تحسين الأداء)
+    const allBoughtVisasData = await Visa.find()
+      .populate('secretary', 'name code')
+      .select('_id secretaryCode orderNumber name secretary status totalExpenses profit secretaryEarnings')
+      .limit(100); // تحديد عدد النتائج لتحسين الأداء
+
     // تفاصيل جميع التأشيرات المشتراة مع ربح الشركة لكل منها
-    const allBoughtVisas = await Promise.all(allVisas.map(async (visa) => {
-      const secretary = await Secretary.findById(visa.secretary);
+    const allBoughtVisas = allBoughtVisasData.map(visa => {
       let companyProfit = 0;
       let status = '';
 
@@ -84,9 +149,9 @@ router.get('/company', async (req, res) => {
         reference: `${visa.secretaryCode}${visa.orderNumber.toString().padStart(3, '0')}`,
         name: visa.name,
         secretary: {
-          _id: secretary._id,
-          name: secretary.name,
-          code: secretary.code
+          _id: visa.secretary._id,
+          name: visa.secretary.name,
+          code: visa.secretary.code
         },
         status: status,
         currentStage: visa.currentStage,
@@ -105,27 +170,78 @@ router.get('/company', async (req, res) => {
       };
     }));
 
-    // حساب الإحصائيات الشهرية والسنوية
+    // حساب الإحصائيات الشهرية والسنوية باستخدام تجميع قاعدة البيانات
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
 
-    const monthlyExpenses = allVisas
-      .filter(v => new Date(v.createdAt).getFullYear() === currentYear && 
-                   new Date(v.createdAt).getMonth() + 1 === currentMonth)
-      .reduce((sum, visa) => sum + visa.totalExpenses, 0);
+    const monthlyStats = await Visa.aggregate([
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: [{ $year: "$createdAt" }, currentYear] },
+              { $eq: [{ $month: "$createdAt" }, currentMonth] }
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          monthlyExpenses: { $sum: "$totalExpenses" },
+          monthlySoldProfit: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "مباعة"] },
+                { $subtract: ["$profit", "$secretaryEarnings"] },
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
 
-    const monthlyProfit = soldVisas
-      .filter(v => new Date(v.soldAt).getFullYear() === currentYear && 
-                   new Date(v.soldAt).getMonth() + 1 === currentMonth)
-      .reduce((sum, visa) => sum + (visa.profit - visa.secretaryEarnings), 0);
+    const yearlyStats = await Visa.aggregate([
+      {
+        $match: {
+          $expr: { $eq: [{ $year: "$createdAt" }, currentYear] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          yearlyExpenses: { $sum: "$totalExpenses" }
+        }
+      }
+    ]);
 
-    const yearlyExpenses = allVisas
-      .filter(v => new Date(v.createdAt).getFullYear() === currentYear)
-      .reduce((sum, visa) => sum + visa.totalExpenses, 0);
+    const monthlyData = monthlyStats[0] || { monthlyExpenses: 0, monthlySoldProfit: 0 };
+    const yearlyData = yearlyStats[0] || { yearlyExpenses: 0 };
 
-    const yearlyProfit = soldVisas
-      .filter(v => new Date(v.soldAt).getFullYear() === currentYear)
-      .reduce((sum, visa) => sum + (visa.profit - visa.secretaryEarnings), 0);
+    const monthlyExpenses = monthlyData.monthlyExpenses;
+    const monthlyProfit = monthlyData.monthlySoldProfit;
+    const yearlyExpenses = yearlyData.yearlyExpenses;
+
+    // حساب الربح السنوي للتأشيرات المباعة
+    const yearlyProfitStats = await Visa.aggregate([
+      {
+        $match: {
+          status: 'مباعة',
+          $expr: { $eq: [{ $year: "$soldAt" }, currentYear] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          yearlyProfit: {
+            $sum: { $subtract: ["$profit", "$secretaryEarnings"] }
+          }
+        }
+      }
+    ]);
+
+    const yearlyProfit = yearlyProfitStats[0]?.yearlyProfit || 0;
 
     const averageProfitPerVisa = totalVisasSold > 0 ? totalProfit / totalVisasSold : 0;
 

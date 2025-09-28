@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// الحصول على سكرتيرة محددة مع المعلومات التفصيلية
+// الحصول على سكرتيرة محددة مع المعلومات التفصيلية (محسّن)
 router.get('/:id', async (req, res) => {
   try {
     const secretary = await Secretary.findById(req.params.id);
@@ -22,32 +22,76 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'السكرتيرة غير موجودة' });
     }
 
-    // الحصول على جميع التأشيرات لهذه السكرتيرة
+    // حساب الإحصائيات باستخدام تجميع قاعدة البيانات (أسرع)
+    const stats = await Visa.aggregate([
+      { $match: { secretary: new mongoose.Types.ObjectId(req.params.id) } },
+      {
+        $group: {
+          _id: null,
+          totalVisas: { $sum: 1 },
+          totalExpenses: { $sum: "$totalExpenses" },
+          activeVisas: {
+            $sum: { $cond: [{ $eq: ["$status", "قيد_الشراء"] }, 1, 0] }
+          },
+          availableVisas: {
+            $sum: { $cond: [{ $eq: ["$status", "معروضة_للبيع"] }, 1, 0] }
+          },
+          soldVisas: {
+            $sum: { $cond: [{ $eq: ["$status", "مباعة"] }, 1, 0] }
+          },
+          cancelledVisas: {
+            $sum: { $cond: [{ $eq: ["$status", "ملغاة"] }, 1, 0] }
+          },
+          totalEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "مباعة"] },
+                "$secretaryEarnings",
+                0
+              ]
+            }
+          },
+          totalDebt: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "ملغاة"] },
+                "$totalExpenses",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const statsData = stats[0] || {
+      totalVisas: 0,
+      totalExpenses: 0,
+      activeVisas: 0,
+      availableVisas: 0,
+      soldVisas: 0,
+      cancelledVisas: 0,
+      totalEarnings: 0,
+      totalDebt: 0
+    };
+
+    // جلب التأشيرات مع تحديد عدد النتائج لتحسين الأداء
     const visas = await Visa.find({ secretary: req.params.id })
       .populate('secretary', 'name code')
-      .sort({ createdAt: -1 });
-
-    // حساب الإحصائيات
-    const activeVisas = visas.filter(v => v.status === 'قيد_الشراء');
-    const availableVisas = visas.filter(v => v.status === 'معروضة_للبيع');
-    const soldVisas = visas.filter(v => v.status === 'مباعة');
-    const cancelledVisas = visas.filter(v => v.status === 'ملغاة');
-
-    const totalExpenses = visas.reduce((sum, visa) => sum + visa.totalExpenses, 0);
-    const totalEarnings = soldVisas.reduce((sum, visa) => sum + visa.secretaryEarnings, 0);
-    const totalDebt = cancelledVisas.reduce((sum, visa) => sum + visa.totalExpenses, 0);
+      .sort({ createdAt: -1 })
+      .limit(50); // تحديد عدد النتائج لتحسين الأداء
 
     const secretaryData = {
       ...secretary.toObject(),
       visas,
       statistics: {
-        activeVisas: activeVisas.length,
-        availableVisas: availableVisas.length,
-        soldVisas: soldVisas.length,
-        cancelledVisas: cancelledVisas.length,
-        totalExpenses,
-        totalEarnings,
-        totalDebt
+        activeVisas: statsData.activeVisas,
+        availableVisas: statsData.availableVisas,
+        soldVisas: statsData.soldVisas,
+        cancelledVisas: statsData.cancelledVisas,
+        totalExpenses: statsData.totalExpenses,
+        totalEarnings: statsData.totalEarnings,
+        totalDebt: statsData.totalDebt
       }
     };
 

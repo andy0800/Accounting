@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const compression = require('compression');
 require('dotenv').config();
 
 const app = express();
@@ -41,22 +42,48 @@ const corsOptions = {
 };
 
 // Middleware
+app.use(compression()); // Enable gzip compression
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Increase JSON payload limit
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Add response caching headers
+app.use((req, res, next) => {
+  // Cache static assets for 1 hour
+  if (req.url.startsWith('/uploads/')) {
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
+  // Cache API responses for 5 minutes
+  else if (req.url.startsWith('/api/')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  next();
+});
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Database connection
+// Database connection with optimization
 const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://andydaddy080:1s8trWSbR9J8rNkq@cluster0.g5rsvmu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(mongoUri);
+// Optimized MongoDB connection options
+const mongooseOptions = {
+  maxPoolSize: 10, // Maintain up to 10 socket connections
+  serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+  bufferMaxEntries: 0, // Disable mongoose buffering
+  bufferCommands: false, // Disable mongoose buffering
+  retryWrites: true,
+  w: 'majority'
+};
+
+mongoose.connect(mongoUri, mongooseOptions);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'خطأ في الاتصال بقاعدة البيانات:'));
 db.once('open', () => {
   console.log('تم الاتصال بقاعدة البيانات بنجاح');
+  console.log('🚀 Database connection optimized for performance');
 });
 
 // Health check endpoint
