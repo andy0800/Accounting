@@ -46,6 +46,8 @@ interface DashboardData {
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,8 +56,15 @@ const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async (retryCount = 0) => {
     try {
+      if (retryCount > 0) {
+        setIsRetrying(true);
+        setRetryAttempt(retryCount);
+      }
+      
       const response = await apiClient.get('/api/accounts/summary');
       setData(response.data);
+      setRetryAttempt(0);
+      setIsRetrying(false);
     } catch (error: any) {
       console.error('خطأ في جلب بيانات لوحة التحكم:', error);
       
@@ -70,6 +79,7 @@ const Dashboard: React.FC = () => {
       
       // Log error but don't set error state since it was removed
       console.error('فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.');
+      setIsRetrying(false);
     } finally {
       setLoading(false);
     }
@@ -91,10 +101,22 @@ const Dashboard: React.FC = () => {
     { name: 'ربح الشركة', value: data.totalCompanyProfit },
   ] : [], [data]);
 
-  if (loading) {
+  if (loading || isRetrying) {
     return (
       <Box>
         <Typography variant="h4" sx={{ mb: 3 }}>لوحة التحكم</Typography>
+        
+        {isRetrying && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 2 }}>
+            <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+              🔄 إعادة المحاولة {retryAttempt}/2 - الخادم يستيقظ من النوم...
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              هذا أمر طبيعي مع الخطة المجانية - قد يستغرق بضع ثوانٍ
+            </Typography>
+          </Box>
+        )}
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
             <LoadingSkeleton type="card" />

@@ -10,6 +10,11 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Add retry configuration
+  retry: 3,
+  retryDelay: (retryCount) => {
+    return Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+  },
 });
 
 // Simple in-memory cache for API responses

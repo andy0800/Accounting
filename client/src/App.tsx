@@ -7,6 +7,7 @@ import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import Navigation from './components/Navigation';
 import ErrorBoundary from './components/ErrorBoundary';
+import { backendPreloader } from './utils/backendPreloader';
 
 // Lazy load all components for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -214,6 +215,11 @@ const LoadingSpinner = () => (
 
 
 function App() {
+  // Warm up backend when app starts
+  React.useEffect(() => {
+    backendPreloader.warmUpBackend();
+  }, []);
+
   return (
     <CacheProvider value={cacheRtl}>
       <ThemeProvider theme={theme}>
