@@ -66,11 +66,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Database connection with optimization
 const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://andydaddy080:1s8trWSbR9J8rNkq@cluster0.g5rsvmu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-// Optimized MongoDB connection options (compatible with MongoDB driver)
+// Optimized MongoDB connection options for free tier deployments
 const mongooseOptions = {
   maxPoolSize: 10, // Maintain up to 10 socket connections
-  serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+  serverSelectionTimeoutMS: 30000, // Increased to 30 seconds for free tier
+  socketTimeoutMS: 60000, // Increased to 60 seconds for better stability
+  connectTimeoutMS: 30000, // Added connection timeout
+  heartbeatFrequencyMS: 10000, // Added heartbeat frequency
+  maxIdleTimeMS: 60000, // Added max idle time
   retryWrites: true,
   w: 'majority'
 };
@@ -78,13 +81,48 @@ const mongooseOptions = {
 // Disable mongoose command buffering globally
 mongoose.set('bufferCommands', false);
 
-mongoose.connect(mongoUri, mongooseOptions);
+// Connection retry logic for free tier deployments
+const connectWithRetry = () => {
+  console.log('🔄 Attempting to connect to MongoDB Atlas...');
+  
+  mongoose.connect(mongoUri, mongooseOptions)
+    .then(() => {
+      console.log('✅ تم الاتصال بقاعدة البيانات بنجاح');
+      console.log('🚀 Database connection optimized for free tier');
+    })
+    .catch((error) => {
+      console.error('❌ خطأ في الاتصال بقاعدة البيانات:', error.message);
+      console.log('🔄 سيتم إعادة المحاولة خلال 5 ثوانٍ...');
+      setTimeout(connectWithRetry, 5000); // Retry after 5 seconds
+    });
+};
+
+// Initial connection attempt
+connectWithRetry();
 
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'خطأ في الاتصال بقاعدة البيانات:'));
+
+// Enhanced error handling for connection issues
+db.on('error', (error) => {
+  console.error('❌ خطأ في قاعدة البيانات:', error.message);
+  if (error.message.includes('Server selection timed out')) {
+    console.log('⏰ انتهت مهلة الاتصال - هذا طبيعي في الطبقة المجانية');
+    console.log('🔄 سيتم إعادة المحاولة تلقائياً...');
+  }
+});
+
+db.on('disconnected', () => {
+  console.log('⚠️  انقطع الاتصال مع قاعدة البيانات');
+  console.log('🔄 محاولة إعادة الاتصال...');
+  setTimeout(connectWithRetry, 5000);
+});
+
+db.on('reconnected', () => {
+  console.log('✅ تم إعادة الاتصال بقاعدة البيانات');
+});
+
 db.once('open', () => {
-  console.log('تم الاتصال بقاعدة البيانات بنجاح');
-  console.log('🚀 Database connection optimized for performance');
+  console.log('🎉 قاعدة البيانات جاهزة للاستخدام');
 });
 
 // Health check endpoint
@@ -128,6 +166,50 @@ app.use((err, req, res, next) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`الخادم يعمل على المنفذ ${PORT}`);
+// Start server with graceful shutdown handling
+const server = app.listen(PORT, () => {
+  console.log(`🚀 الخادم يعمل على المنفذ ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 CORS Origin: ${process.env.CORS_ORIGIN || 'localhost'}`);
+});
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  console.log(`\n⚠️  Received ${signal}. Shutting down gracefully...`);
+  
+  server.close((err) => {
+    if (err) {
+      console.error('❌ Error during server shutdown:', err);
+      process.exit(1);
+    }
+    
+    console.log('✅ Server closed successfully');
+    
+    // Close database connection
+    mongoose.connection.close((err) => {
+      if (err) {
+        console.error('❌ Error closing database connection:', err);
+        process.exit(1);
+      }
+      
+      console.log('✅ Database connection closed successfully');
+      console.log('👋 Goodbye!');
+      process.exit(0);
+    });
+  });
+};
+
+// Handle process termination
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled rejections and exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('Unhandled Rejection');
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('Uncaught Exception');
 }); 

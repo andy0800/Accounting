@@ -6,7 +6,7 @@ services:
     name: fursatkum-backend
     env: node
     plan: free
-    buildCommand: cd server && npm install
+    buildCommand: cd server && npm ci --omit=dev
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
@@ -14,9 +14,7 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        fromDatabase:
-          name: fursatkum-mongodb
-          property: connectionString
+        value: mongodb+srv://andydaddy080:1s8trWSbR9J8rNkq@cluster0.g5rsvmu.mongodb.net/visa_system?retryWrites=true&w=majority&appName=Cluster0
       - key: JWT_SECRET
         value: 1f8bdb5f7d73b5a423069d428e4bf95fc391b320e7eec411b5d534dcf54b0097
       - key: CORS_ORIGIN
@@ -37,9 +35,5 @@ services:
       - key: REACT_APP_ENV
         value: production
 
-  # MongoDB Database
-  - type: pserv
-    name: fursatkum-mongodb
-    env: mongodb
-    plan: free
-    region: oregon
+# MongoDB Atlas is used instead of Render's database service
+# Atlas connection string is configured in backend environment variables
