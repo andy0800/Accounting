@@ -82,7 +82,9 @@ const Visas: React.FC = () => {
   const fetchVisas = async () => {
     try {
       const response = await apiClient.get('/api/visas');
-      setVisas(response.data);
+      const payload = response.data;
+      const list = Array.isArray(payload) ? payload : (payload?.visas ?? []);
+      setVisas(list);
     } catch (error) {
       console.error('خطأ في جلب التأشيرات:', error);
     }
