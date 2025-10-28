@@ -467,6 +467,19 @@ router.post('/:id/replace', upload.single('visaDocument'), async (req, res) => {
       return res.status(400).json({ message: 'تم استبدال التأشيرة بالفعل' });
     }
 
+    // التحقق من قاعدة الـ 30 يوم
+    const visaCreationDate = new Date(originalVisa.createdAt);
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - visaCreationDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDifference > 30) {
+      return res.status(400).json({ 
+        message: `لا يمكن استبدال التأشيرة بعد مرور 30 يوماً من إصدارها. تم إصدار التأشيرة منذ ${daysDifference} يوماً`,
+        daysSinceCreation: daysDifference,
+        maxAllowedDays: 30
+      });
+    }
+
     const {
       name, dateOfBirth, nationality, passportNumber, visaNumber,
       middlemanName, visaSponsor, visaIssueDate, visaExpiryDate, visaDeadline
@@ -512,6 +525,44 @@ router.post('/:id/replace', upload.single('visaDocument'), async (req, res) => {
     res.status(201).json(savedNewVisa);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// التحقق من إمكانية استبدال التأشيرة
+router.get('/:id/replacement-eligibility', async (req, res) => {
+  try {
+    const visa = await Visa.findById(req.params.id);
+    if (!visa) {
+      return res.status(404).json({ message: 'التأشيرة غير موجودة' });
+    }
+
+    const visaCreationDate = new Date(visa.createdAt);
+    const currentDate = new Date();
+    const daysSinceCreation = Math.floor((currentDate - visaCreationDate) / (1000 * 60 * 60 * 24));
+    const remainingDays = Math.max(0, 30 - daysSinceCreation);
+    
+    const isEligible = !visa.isReplaced && 
+                      visa.status !== 'مباعة' && 
+                      visa.status !== 'ملغاة' && 
+                      daysSinceCreation <= 30;
+
+    res.json({
+      eligible: isEligible,
+      daysSinceCreation,
+      remainingDays,
+      maxAllowedDays: 30,
+      isReplaced: visa.isReplaced,
+      status: visa.status,
+      createdAt: visa.createdAt,
+      reasons: isEligible ? [] : [
+        ...(visa.isReplaced ? ['تم استبدال التأشيرة بالفعل'] : []),
+        ...(visa.status === 'مباعة' ? ['التأشيرة مباعة'] : []),
+        ...(visa.status === 'ملغاة' ? ['التأشيرة ملغاة'] : []),
+        ...(daysSinceCreation > 30 ? [`انتهت فترة الاستبدال (${daysSinceCreation} يوم)`] : [])
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

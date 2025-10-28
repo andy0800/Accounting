@@ -26,7 +26,8 @@ import {
   Paper,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Tooltip
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -119,6 +120,12 @@ const VisaDetail: React.FC = () => {
   const [visa, setVisa] = useState<Visa | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [replacementEligibility, setReplacementEligibility] = useState<{
+    eligible: boolean;
+    daysSinceCreation: number;
+    remainingDays: number;
+    reasons: string[];
+  } | null>(null);
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [secretaries, setSecretaries] = useState<Secretary[]>([]);
@@ -159,8 +166,13 @@ const VisaDetail: React.FC = () => {
 
   const fetchVisaDetails = useCallback(async () => {
     try {
-      const response = await apiClient.get(`/api/visas/${id}`);
-      setVisa(response.data);
+      const [visaResponse, eligibilityResponse] = await Promise.all([
+        apiClient.get(`/api/visas/${id}`),
+        apiClient.get(`/api/visas/${id}/replacement-eligibility`)
+      ]);
+      
+      setVisa(visaResponse.data);
+      setReplacementEligibility(eligibilityResponse.data);
       setLoading(false);
     } catch (error) {
       console.error('خطأ في جلب تفاصيل التأشيرة:', error);
@@ -425,6 +437,34 @@ const VisaDetail: React.FC = () => {
           </Alert>
         )}
 
+        {/* معلومات إمكانية الاستبدال */}
+        {replacementEligibility && (
+          <Alert 
+            severity={replacementEligibility.eligible ? "info" : "warning"} 
+            sx={{ mb: 2 }}
+          >
+            {replacementEligibility.eligible ? (
+              <Box>
+                <Typography variant="body2">
+                  يمكن استبدال التأشيرة خلال {replacementEligibility.remainingDays} يوم متبقي
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  تم إنشاء التأشيرة منذ {replacementEligibility.daysSinceCreation} يوم
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                <Typography variant="body2">
+                  لا يمكن استبدال التأشيرة
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  الأسباب: {replacementEligibility.reasons.join(', ')}
+                </Typography>
+              </Box>
+            )}
+          </Alert>
+        )}
+
         <Grid container spacing={3}>
           {/* المعلومات الأساسية */}
           <Grid item xs={12} md={8}>
@@ -518,7 +558,7 @@ const VisaDetail: React.FC = () => {
                     </Button>
                   )}
                   
-                  {visa.status !== 'مباعة' && visa.status !== 'ملغاة' && !visa.isReplaced && (
+                  {replacementEligibility?.eligible && (
                     <Button
                       variant="outlined"
                       color="warning"
@@ -526,7 +566,31 @@ const VisaDetail: React.FC = () => {
                       onClick={() => setReplaceDialog(true)}
                     >
                       استبدال التأشيرة
+                      {replacementEligibility.remainingDays > 0 && (
+                        <Chip 
+                          label={`${replacementEligibility.remainingDays} يوم متبقي`}
+                          size="small"
+                          color="warning"
+                          sx={{ ml: 1 }}
+                        />
+                      )}
                     </Button>
+                  )}
+                  
+                  {replacementEligibility && !replacementEligibility.eligible && 
+                   visa?.status !== 'مباعة' && visa?.status !== 'ملغاة' && (
+                    <Tooltip title={replacementEligibility.reasons.join(', ')}>
+                      <span>
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          startIcon={<ReplaceIcon />}
+                          disabled
+                        >
+                          استبدال التأشيرة (غير متاح)
+                        </Button>
+                      </span>
+                    </Tooltip>
                   )}
                   
                   {visa.status !== 'مباعة' && visa.status !== 'ملغاة' && (
