@@ -8,9 +8,9 @@ const Account = require('../models/Account');
 // الحصول على جميع السكرتارية (محسّن)
 router.get('/', async (req, res) => {
   try {
-    // Only fetch essential fields for listing
+    // Only fetch essential fields for listing (including visa arrays for counts)
     const secretaries = await Secretary.find()
-      .select('name code email phone totalEarnings totalDebt createdAt')
+      .select('name code email phone totalEarnings totalDebt activeVisas completedVisas cancelledVisas createdAt')
       .sort({ name: 1 })
       .lean(); // Use lean() for better performance
     

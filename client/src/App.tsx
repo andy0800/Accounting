@@ -79,6 +79,9 @@ const theme = createTheme({
       styleOverrides: {
         body: {
           backgroundColor: '#f4f6fa',
+          // Fix for -moz-osx-font-smoothing warning
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
         },
       },
     },

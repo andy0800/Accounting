@@ -50,9 +50,9 @@ interface Secretary {
   code: string;
   totalEarnings: number;
   totalDebt: number;
-  activeVisas: string[];
-  completedVisas: string[];
-  cancelledVisas: string[];
+  activeVisas?: string[]; // Made optional for safe access
+  completedVisas?: string[]; // Made optional for safe access
+  cancelledVisas?: string[]; // Made optional for safe access
   createdAt: string;
 }
 
@@ -367,21 +367,21 @@ const Secretaries: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={secretary.activeVisas.length} 
+                        label={secretary.activeVisas?.length || 0} 
                         color="primary" 
                         size="small" 
                       />
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={secretary.completedVisas.length} 
+                        label={secretary.completedVisas?.length || 0} 
                         color="success" 
                         size="small" 
                       />
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={secretary.cancelledVisas.length} 
+                        label={secretary.cancelledVisas?.length || 0} 
                         color="error" 
                         size="small" 
                       />
