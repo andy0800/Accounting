@@ -68,13 +68,13 @@ const checkOverdueVisas = async () => {
   }
 };
 
-// الحصول على جميع التأشيرات مع الفلترة والترقيم
+// الحصول على جميع التأشيرات مع الفلترة والترقيم (محسّن للأداء)
 router.get('/', async (req, res) => {
   try {
-    // التحقق من التأشيرات المتأخرة أولاً
-    await checkOverdueVisas();
+    // Skip overdue check for better performance - run it separately
+    // await checkOverdueVisas();
     
-    const { status, stage, secretary, page = 1, limit = 20 } = req.query;
+    const { status, stage, secretary, page = 1, limit = 10 } = req.query; // Reduced default limit
     let filter = {};
     
     if (status) filter.status = status;

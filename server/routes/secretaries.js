@@ -5,10 +5,16 @@ const Secretary = require('../models/Secretary');
 const Visa = require('../models/Visa');
 const Account = require('../models/Account');
 
-// الحصول على جميع السكرتارية
+// الحصول على جميع السكرتارية (محسّن)
 router.get('/', async (req, res) => {
   try {
-    const secretaries = await Secretary.find().sort({ name: 1 });
+    // Only fetch essential fields for listing
+    const secretaries = await Secretary.find()
+      .select('name code email phone totalEarnings totalDebt createdAt')
+      .sort({ name: 1 })
+      .lean(); // Use lean() for better performance
+    
+    console.log(`📋 Fetched ${secretaries.length} secretaries (lean query)`);
     res.json(secretaries);
   } catch (error) {
     res.status(500).json({ message: error.message });

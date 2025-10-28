@@ -79,12 +79,14 @@ const Visas: React.FC = () => {
     filterVisas();
   }, [visas, statusFilter, stageFilter, filterVisas]);
 
-  const fetchVisas = async () => {
+  const fetchVisas = async (page = 1, limit = 15) => {
     try {
-      const response = await apiClient.get('/api/visas');
+      console.log(`🔄 Fetching visas - page ${page}, limit ${limit}`);
+      const response = await apiClient.get(`/api/visas?page=${page}&limit=${limit}`);
       const payload = response.data;
       const list = Array.isArray(payload) ? payload : (payload?.visas ?? []);
       setVisas(list);
+      console.log(`✅ Loaded ${list.length} visas`);
     } catch (error) {
       console.error('خطأ في جلب التأشيرات:', error);
     }

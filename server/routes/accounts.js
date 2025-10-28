@@ -4,9 +4,25 @@ const Account = require('../models/Account');
 const Secretary = require('../models/Secretary');
 const Visa = require('../models/Visa');
 
-// الحصول على حساب الشركة (فرصتكم)
+// In-memory cache for dashboard data (5 minutes TTL)
+let dashboardCache = {
+  data: null,
+  timestamp: 0,
+  TTL: 5 * 60 * 1000 // 5 minutes
+};
+
+// الحصول على حساب الشركة (فرصتكم) - محسّن مع التخزين المؤقت
 router.get('/company', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (dashboardCache.data && (now - dashboardCache.timestamp) < dashboardCache.TTL) {
+      console.log('📦 Dashboard cache hit - serving cached data');
+      return res.json(dashboardCache.data);
+    }
+
+    console.log('🔄 Dashboard cache miss - fetching fresh data');
+
     let companyAccount = await Account.findOne({ type: 'شركة' });
     
     if (!companyAccount) {
@@ -86,11 +102,12 @@ router.get('/company', async (req, res) => {
     const totalProfit = statsData.totalProfit;
     const totalSecretaryEarnings = statsData.totalSecretaryEarnings;
     
-    // جلب تفاصيل التأشيرات المباعة فقط (محدود لتحسين الأداء)
+    // جلب تفاصيل التأشيرات المباعة فقط (محدود جداً لتحسين الأداء)
     const soldVisasDetails = await Visa.find({ status: 'مباعة' })
       .populate('secretary', 'name code')
       .select('_id secretaryCode orderNumber name secretary sellingPrice totalExpenses profit secretaryEarnings soldAt')
-      .limit(50); // تحديد عدد النتائج لتحسين الأداء
+      .sort({ soldAt: -1 }) // أحدث المبيعات أولاً
+      .limit(20); // تقليل العدد من 50 إلى 20 لتحسين الأداء
 
     // حساب ربح الشركة لكل تأشيرة مباعة
     const companyProfitPerVisa = soldVisasDetails.map(visa => ({
@@ -110,11 +127,12 @@ router.get('/company', async (req, res) => {
       soldAt: visa.soldAt
     }));
 
-    // جلب جميع التأشيرات مع السكرتارية في استعلام واحد (تحسين الأداء)
-    const allBoughtVisasData = await Visa.find()
-      .populate('secretary', 'name code')
-      .select('_id secretaryCode orderNumber name secretary status totalExpenses profit secretaryEarnings')
-      .limit(100); // تحديد عدد النتائج لتحسين الأداء
+        // جلب عينة من التأشيرات للعرض (تحسين الأداء بشكل كبير)
+        const allBoughtVisasData = await Visa.find()
+          .populate('secretary', 'name code')
+          .select('_id secretaryCode orderNumber name secretary status totalExpenses profit secretaryEarnings createdAt')
+          .sort({ createdAt: -1 }) // أحدث التأشيرات أولاً
+          .limit(30); // تقليل العدد من 100 إلى 30 لتحسين الأداء
 
     // تفاصيل جميع التأشيرات المشتراة مع ربح الشركة لكل منها
     const allBoughtVisas = allBoughtVisasData.map(visa => {
@@ -245,27 +263,122 @@ router.get('/company', async (req, res) => {
 
     const averageProfitPerVisa = totalVisasSold > 0 ? totalProfit / totalVisasSold : 0;
 
-    const companyData = {
-      ...companyAccount.toObject(),
-      statistics: {
-        totalExpenses,
-        totalProfit,
-        totalVisasBought,
-        totalVisasSold,
-        totalVisasCancelled,
-        totalActiveVisas,
-        averageProfitPerVisa,
-        monthlyExpenses,
-        monthlyProfit,
-        yearlyExpenses,
-        yearlyProfit,
-        companyProfitPerVisa,
-        allBoughtVisas
-      }
+        const companyData = {
+          ...companyAccount.toObject(),
+          statistics: {
+            totalExpenses,
+            totalProfit,
+            totalVisasBought,
+            totalVisasSold,
+            totalVisasCancelled,
+            totalActiveVisas,
+            averageProfitPerVisa,
+            monthlyExpenses,
+            monthlyProfit,
+            yearlyExpenses,
+            yearlyProfit,
+            companyProfitPerVisa,
+            allBoughtVisas
+          }
+        };
+
+        // Cache the result for 5 minutes
+        dashboardCache.data = companyData;
+        dashboardCache.timestamp = Date.now();
+        console.log('💾 Dashboard data cached successfully');
+
+        res.json(companyData);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// نقطة نهاية محسّنة للوحة التحكم - بيانات أساسية فقط
+router.get('/summary', async (req, res) => {
+  try {
+    // Check cache first
+    const now = Date.now();
+    if (dashboardCache.data && (now - dashboardCache.timestamp) < dashboardCache.TTL) {
+      console.log('📦 Dashboard summary cache hit');
+      const summary = {
+        totalVisas: dashboardCache.data.statistics.totalVisasBought,
+        activeVisas: dashboardCache.data.statistics.totalActiveVisas,
+        availableVisas: dashboardCache.data.statistics.availableVisas || 0,
+        soldVisas: dashboardCache.data.statistics.totalVisasSold,
+        cancelledVisas: dashboardCache.data.statistics.totalVisasCancelled,
+        totalExpenses: dashboardCache.data.statistics.totalExpenses,
+        totalProfit: dashboardCache.data.statistics.totalProfit,
+        totalSecretaryEarnings: dashboardCache.data.statistics.totalSecretaryEarnings || 0,
+        totalCompanyProfit: dashboardCache.data.statistics.totalProfit,
+        totalSecretaryDebt: 0,
+        secretaryCount: await Secretary.countDocuments(),
+        overdueVisas: 0
+      };
+      return res.json(summary);
+    }
+
+    // Fast aggregation for dashboard summary only
+    const [stats, secretaryCount] = await Promise.all([
+      Visa.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalVisas: { $sum: 1 },
+            totalExpenses: { $sum: "$totalExpenses" },
+            soldVisas: { $sum: { $cond: [{ $eq: ["$status", "مباعة"] }, 1, 0] } },
+            cancelledVisas: { $sum: { $cond: [{ $eq: ["$status", "ملغاة"] }, 1, 0] } },
+            activeVisas: { $sum: { $cond: [{ $eq: ["$status", "قيد_الشراء"] }, 1, 0] } },
+            availableVisas: { $sum: { $cond: [{ $eq: ["$status", "معروضة_للبيع"] }, 1, 0] } },
+            totalProfit: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$status", "مباعة"] },
+                  { $subtract: ["$profit", "$secretaryEarnings"] },
+                  0
+                ]
+              }
+            },
+            totalSecretaryEarnings: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "مباعة"] }, "$secretaryEarnings", 0]
+              }
+            }
+          }
+        }
+      ]),
+      Secretary.countDocuments()
+    ]);
+
+    const statsData = stats[0] || {
+      totalVisas: 0,
+      totalExpenses: 0,
+      soldVisas: 0,
+      cancelledVisas: 0,
+      activeVisas: 0,
+      availableVisas: 0,
+      totalProfit: 0,
+      totalSecretaryEarnings: 0
     };
 
-    res.json(companyData);
+    const summary = {
+      totalVisas: statsData.totalVisas,
+      activeVisas: statsData.activeVisas,
+      availableVisas: statsData.availableVisas,
+      soldVisas: statsData.soldVisas,
+      cancelledVisas: statsData.cancelledVisas,
+      totalExpenses: statsData.totalExpenses,
+      totalProfit: statsData.totalProfit,
+      totalSecretaryEarnings: statsData.totalSecretaryEarnings,
+      totalCompanyProfit: statsData.totalProfit,
+      totalSecretaryDebt: 0,
+      secretaryCount: secretaryCount,
+      overdueVisas: 0
+    };
+
+    console.log('⚡ Dashboard summary generated in fast mode');
+    res.json(summary);
   } catch (error) {
+    console.error('Error generating dashboard summary:', error);
     res.status(500).json({ message: error.message });
   }
 });
