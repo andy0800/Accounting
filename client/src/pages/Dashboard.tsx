@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Grid,
   Card,
@@ -50,11 +50,7 @@ const Dashboard: React.FC = () => {
   const [isRetrying, setIsRetrying] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async (retryCount = 0) => {
+  const fetchDashboardData = useCallback(async (retryCount = 0) => {
     try {
       if (retryCount > 0) {
         setIsRetrying(true);
@@ -83,16 +79,21 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-  const pieData = useMemo(() => data ? [
-    { name: 'نشطة', value: data.activeVisas, color: COLORS[0] },
-    { name: 'متاحة', value: data.availableVisas, color: COLORS[1] },
-    { name: 'مباعة', value: data.soldVisas, color: COLORS[2] },
-    { name: 'ملغاة', value: data.cancelledVisas, color: COLORS[3] },
-  ] : [], [data, COLORS]);
+  const pieData = useMemo(() => {
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+    return data ? [
+      { name: 'نشطة', value: data.activeVisas, color: COLORS[0] },
+      { name: 'متاحة', value: data.availableVisas, color: COLORS[1] },
+      { name: 'مباعة', value: data.soldVisas, color: COLORS[2] },
+      { name: 'ملغاة', value: data.cancelledVisas, color: COLORS[3] },
+    ] : [];
+  }, [data]);
 
   const barData = useMemo(() => data ? [
     { name: 'إجمالي المصروفات', value: data.totalExpenses },

@@ -21,13 +21,13 @@ const PerformanceMonitor: React.FC = () => {
     const startTime = performance.now();
     
     // Listen for API calls from axios interceptors
-    const handleApiCall = () => {
-      setMetrics(prev => ({ ...prev, apiCalls: prev.apiCalls + 1 }));
-    };
+    // const handleApiCall = () => {
+    //   setMetrics(prev => ({ ...prev, apiCalls: prev.apiCalls + 1 }));
+    // };
 
-    const handleCacheHit = () => {
-      setMetrics(prev => ({ ...prev, cacheHits: prev.cacheHits + 1 }));
-    };
+    // const handleCacheHit = () => {
+    //   setMetrics(prev => ({ ...prev, cacheHits: prev.cacheHits + 1 }));
+    // };
 
     // Measure initial load time
     const loadTime = performance.now() - startTime;
