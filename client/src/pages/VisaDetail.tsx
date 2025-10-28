@@ -126,6 +126,26 @@ const VisaDetail: React.FC = () => {
     remainingDays: number;
     reasons: string[];
   } | null>(null);
+  
+  const [arrivalStatus, setArrivalStatus] = useState<{
+    visaId: string;
+    visaNumber: string;
+    maidArrivalVerified: boolean;
+    maidArrivalDate?: string;
+    maidArrivalVerifiedBy?: {
+      _id: string;
+      name: string;
+      code: string;
+    };
+    maidArrivalNotes?: string;
+    activeCancellationDeadline?: string;
+    deadlineStatus: 'inactive' | 'active' | 'expired';
+    daysUntilCancellation?: number;
+    daysSinceArrival?: number;
+    eligibleForArrivalVerification: boolean;
+    currentStage: string;
+    status: string;
+  } | null>(null);
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [secretaries, setSecretaries] = useState<Secretary[]>([]);
@@ -135,6 +155,7 @@ const VisaDetail: React.FC = () => {
   const [sellDialog, setSellDialog] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
   const [replaceDialog, setReplaceDialog] = useState(false);
+  const [arrivalDialog, setArrivalDialog] = useState(false);
   const [currentStage, setCurrentStage] = useState('');
   const [expenseData, setExpenseData] = useState({
     amount: '',
@@ -163,16 +184,24 @@ const VisaDetail: React.FC = () => {
     visaDeadline: new Date(),
     secretaryProfitPercentage: ''
   });
+  
+  const [arrivalData, setArrivalData] = useState({
+    arrivalDate: new Date(),
+    notes: '',
+    verifiedBy: ''
+  });
 
   const fetchVisaDetails = useCallback(async () => {
     try {
-      const [visaResponse, eligibilityResponse] = await Promise.all([
+      const [visaResponse, eligibilityResponse, arrivalResponse] = await Promise.all([
         apiClient.get(`/api/visas/${id}`),
-        apiClient.get(`/api/visas/${id}/replacement-eligibility`)
+        apiClient.get(`/api/visas/${id}/replacement-eligibility`),
+        apiClient.get(`/api/visas/${id}/arrival-status`) // New API call
       ]);
       
       setVisa(visaResponse.data);
       setReplacementEligibility(eligibilityResponse.data);
+      setArrivalStatus(arrivalResponse.data); // Set arrival status
       setLoading(false);
     } catch (error) {
       console.error('خطأ في جلب تفاصيل التأشيرة:', error);
@@ -327,6 +356,34 @@ const VisaDetail: React.FC = () => {
     }
   };
 
+  const handleVerifyArrival = async () => {
+    try {
+      const response = await apiClient.post(`/api/visas/${id}/verify-arrival`, {
+        arrivalDate: arrivalData.arrivalDate.toISOString(),
+        notes: arrivalData.notes,
+        verifiedBy: arrivalData.verifiedBy
+      });
+
+      setSuccess('تم التحقق من وصول الخادمة بنجاح - بدء العد التنازلي 30 يوماً');
+      setArrivalDialog(false);
+      
+      // Reset form
+      setArrivalData({
+        arrivalDate: new Date(),
+        notes: '',
+        verifiedBy: ''
+      });
+      
+      // Refresh data
+      fetchVisaDetails();
+      
+      console.log('✅ تم التحقق من الوصول:', response.data);
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'خطأ في التحقق من وصول الخادمة');
+      console.error('❌ خطأ في التحقق من الوصول:', error);
+    }
+  };
+
   const handleExportExpenses = async () => {
     try {
       const response = await apiClient.get(`/api/exports/expenses/${id}`, {
@@ -465,6 +522,79 @@ const VisaDetail: React.FC = () => {
           </Alert>
         )}
 
+        {/* معلومات وصول الخادمة والموعد النهائي */}
+        {arrivalStatus && (
+          <Alert 
+            severity={
+              arrivalStatus.maidArrivalVerified 
+                ? arrivalStatus.deadlineStatus === 'active' 
+                  ? "success" 
+                  : arrivalStatus.deadlineStatus === 'expired' 
+                    ? "error" 
+                    : "info"
+                : "warning"
+            } 
+            sx={{ mb: 2 }}
+          >
+            {arrivalStatus.maidArrivalVerified ? (
+              <Box>
+                <Typography variant="body2" fontWeight="bold">
+                  ✅ تم التحقق من وصول الخادمة
+                </Typography>
+                <Typography variant="body2">
+                  📅 تاريخ الوصول: {new Date(arrivalStatus.maidArrivalDate!).toLocaleDateString('ar-SA')}
+                </Typography>
+                {arrivalStatus.daysSinceArrival !== undefined && (
+                  <Typography variant="caption" color="text.secondary">
+                    منذ {arrivalStatus.daysSinceArrival} يوم
+                  </Typography>
+                )}
+                
+                {arrivalStatus.deadlineStatus === 'active' && arrivalStatus.daysUntilCancellation !== undefined && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="warning.main">
+                      ⏰ الموعد النهائي للإلغاء: {arrivalStatus.daysUntilCancellation} يوم متبقي
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      الإلغاء التلقائي في: {new Date(arrivalStatus.activeCancellationDeadline!).toLocaleDateString('ar-SA')}
+                    </Typography>
+                  </Box>
+                )}
+                
+                {arrivalStatus.deadlineStatus === 'expired' && (
+                  <Typography variant="body2" color="error.main">
+                    ❌ انتهى الموعد النهائي - مؤهلة للإلغاء التلقائي
+                  </Typography>
+                )}
+                
+                {arrivalStatus.maidArrivalVerifiedBy && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    تم التحقق بواسطة: {arrivalStatus.maidArrivalVerifiedBy.name} ({arrivalStatus.maidArrivalVerifiedBy.code})
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Box>
+                <Typography variant="body2" fontWeight="bold">
+                  ⏳ لم يتم التحقق من وصول الخادمة بعد
+                </Typography>
+                <Typography variant="body2">
+                  🛡️ التأشيرة محمية من الإلغاء التلقائي حتى يتم التحقق من الوصول
+                </Typography>
+                {arrivalStatus.eligibleForArrivalVerification ? (
+                  <Typography variant="caption" color="success.main">
+                    ✅ مؤهلة للتحقق من الوصول
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    ⚠️ غير مؤهلة للتحقق من الوصول حالياً (المرحلة: {arrivalStatus.currentStage})
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Alert>
+        )}
+
         <Grid container spacing={3}>
           {/* المعلومات الأساسية */}
           <Grid item xs={12} md={8}>
@@ -574,6 +704,17 @@ const VisaDetail: React.FC = () => {
                           sx={{ ml: 1 }}
                         />
                       )}
+                    </Button>
+                  )}
+
+                  {arrivalStatus?.eligibleForArrivalVerification && !arrivalStatus.maidArrivalVerified && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<CheckIcon />}
+                      onClick={() => setArrivalDialog(true)}
+                    >
+                      تأكيد وصول الخادمة
                     </Button>
                   )}
                   
@@ -1083,6 +1224,80 @@ const VisaDetail: React.FC = () => {
           <DialogActions>
             <Button onClick={() => setReplaceDialog(false)}>إلغاء</Button>
             <Button onClick={handleReplaceVisa} variant="contained" color="warning">استبدال</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog تأكيد وصول الخادمة */}
+        <Dialog open={arrivalDialog} onClose={() => setArrivalDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>تأكيد وصول الخادمة</DialogTitle>
+          <DialogContent>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                بعد تأكيد الوصول، سيبدأ العد التنازلي لمدة 30 يوماً للموعد النهائي للإلغاء التلقائي
+              </Typography>
+            </Alert>
+            
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <DatePicker
+                  label="تاريخ وصول الخادمة"
+                  value={arrivalData.arrivalDate}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      setArrivalData(prev => ({ ...prev, arrivalDate: newValue }));
+                    }
+                  }}
+                  maxDate={new Date()}
+                  minDate={visa ? new Date(visa.createdAt) : undefined}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true
+                    }
+                  }}
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  select
+                  label="تم التحقق بواسطة"
+                  value={arrivalData.verifiedBy}
+                  onChange={(e) => setArrivalData(prev => ({ ...prev, verifiedBy: e.target.value }))}
+                  required
+                >
+                  {secretaries.map((secretary) => (
+                    <MenuItem key={secretary._id} value={secretary._id}>
+                      {secretary.name} ({secretary.code})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="ملاحظات (اختياري)"
+                  value={arrivalData.notes}
+                  onChange={(e) => setArrivalData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="أي ملاحظات حول وصول الخادمة..."
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setArrivalDialog(false)}>إلغاء</Button>
+            <Button 
+              onClick={handleVerifyArrival} 
+              variant="contained" 
+              color="success"
+              disabled={!arrivalData.verifiedBy}
+            >
+              تأكيد الوصول
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>

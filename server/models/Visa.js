@@ -86,6 +86,32 @@ const visaSchema = new mongoose.Schema({
     required: [true, 'الموعد النهائي للتأشيرة مطلوب']
   },
   
+  // معلومات وصول الخادمة والموعد النهائي الجديد
+  maidArrivalVerified: {
+    type: Boolean,
+    default: false
+  },
+  maidArrivalDate: {
+    type: Date
+  },
+  maidArrivalVerifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Secretary'
+  },
+  maidArrivalNotes: {
+    type: String,
+    trim: true
+  },
+  // الموعد النهائي النشط (يبدأ من تاريخ الوصول)
+  activeCancellationDeadline: {
+    type: Date
+  },
+  deadlineStatus: {
+    type: String,
+    enum: ['inactive', 'active', 'expired'],
+    default: 'inactive'
+  },
+  
   // المستندات
   visaDocument: {
     type: String // مسار الملف
@@ -138,7 +164,7 @@ const visaSchema = new mongoose.Schema({
   // مراحل العملية
   currentStage: {
     type: String,
-    enum: ['أ', 'ب', 'ج', 'د', 'هـ', 'مكتملة', 'ملغاة', 'مباعة'],
+    enum: ['أ', 'ب', 'ج', 'د', 'وصول', 'مكتملة', 'ملغاة', 'مباعة'],
     default: 'أ'
   },
   
@@ -191,7 +217,7 @@ const visaSchema = new mongoose.Schema({
   // الحالة والطوابع الزمنية
   status: {
     type: String,
-    enum: ['قيد_الشراء', 'معروضة_للبيع', 'مباعة', 'ملغاة'],
+    enum: ['قيد_الشراء', 'في_انتظار_الوصول', 'معروضة_للبيع', 'مباعة', 'ملغاة'],
     default: 'قيد_الشراء'
   },
   completedAt: {
@@ -242,6 +268,59 @@ visaSchema.methods.calculateTotalExpenses = function() {
   
   this.totalExpenses = stageA + stageB + stageC + stageD + replacement + this.sellingCommission;
   return this.totalExpenses;
+};
+
+// حساب الموعد النهائي للإلغاء بناءً على تاريخ الوصول
+visaSchema.methods.calculateArrivalBasedDeadline = function() {
+  if (this.maidArrivalVerified && this.maidArrivalDate) {
+    const deadline = new Date(this.maidArrivalDate);
+    deadline.setDate(deadline.getDate() + 30); // 30 يوماً من تاريخ الوصول
+    return deadline;
+  }
+  return null;
+};
+
+// تحديث حالة الموعد النهائي
+visaSchema.methods.updateDeadlineStatus = function() {
+  if (this.maidArrivalVerified && this.maidArrivalDate) {
+    const now = new Date();
+    const deadline = this.calculateArrivalBasedDeadline();
+    
+    if (deadline) {
+      this.activeCancellationDeadline = deadline;
+      
+      if (now > deadline) {
+        this.deadlineStatus = 'expired';
+      } else {
+        this.deadlineStatus = 'active';
+      }
+    }
+  } else {
+    this.deadlineStatus = 'inactive';
+    this.activeCancellationDeadline = null;
+  }
+};
+
+// التحقق من أهلية التحقق من الوصول
+visaSchema.methods.isEligibleForArrivalVerification = function() {
+  // يجب أن تكون التأشيرة في المرحلة د أو مكتملة
+  const eligibleStages = ['د', 'مكتملة'];
+  const eligibleStatuses = ['قيد_الشراء', 'معروضة_للبيع'];
+  
+  return eligibleStages.includes(this.currentStage) && 
+         eligibleStatuses.includes(this.status) &&
+         !this.maidArrivalVerified;
+};
+
+// حساب الأيام المتبقية قبل الإلغاء
+visaSchema.methods.getDaysUntilCancellation = function() {
+  if (this.deadlineStatus === 'active' && this.activeCancellationDeadline) {
+    const now = new Date();
+    const diffTime = this.activeCancellationDeadline - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }
+  return null;
 };
 
 // حساب الربح

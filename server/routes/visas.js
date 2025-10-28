@@ -40,16 +40,21 @@ const upload = multer({
 // التحقق من التأشيرات المتأخرة وإلغاؤها تلقائياً
 const checkOverdueVisas = async () => {
   try {
+    // النظام الجديد: البحث عن التأشيرات التي وصلت الخادمة ولها موعد نهائي نشط منتهي
     const overdueVisas = await Visa.find({
-      status: 'قيد_الشراء',
-      visaDeadline: { $lt: new Date() }
+      maidArrivalVerified: true,
+      deadlineStatus: 'active',
+      activeCancellationDeadline: { $lt: new Date() },
+      status: { $in: ['قيد_الشراء', 'معروضة_للبيع', 'في_انتظار_الوصول'] }
     }).populate('secretary');
 
     for (const visa of overdueVisas) {
       // إلغاء التأشيرة
       visa.status = 'ملغاة';
       visa.cancelledAt = new Date();
-      visa.cancelledReason = 'تجاوز الموعد النهائي تلقائياً';
+      visa.cancelledReason = 'انتهاء الموعد النهائي بعد وصول الخادمة (30 يوماً)';
+      visa.currentStage = 'ملغاة';
+      visa.deadlineStatus = 'expired';
       await visa.save();
 
       // إضافة المصروفات كدين على السكرتيرة
@@ -62,6 +67,22 @@ const checkOverdueVisas = async () => {
           await secretary.save();
         }
       }
+    }
+
+    // تحديث حالة المواعيد النهائية للتأشيرات النشطة
+    const activeVisas = await Visa.find({
+      maidArrivalVerified: true,
+      deadlineStatus: 'active',
+      status: { $in: ['قيد_الشراء', 'معروضة_للبيع', 'في_انتظار_الوصول'] }
+    });
+
+    for (const visa of activeVisas) {
+      visa.updateDeadlineStatus();
+      await visa.save();
+    }
+
+    if (overdueVisas.length > 0) {
+      console.log(`🔄 النظام الجديد: تم إلغاء ${overdueVisas.length} تأشيرة بعد انتهاء 30 يوماً من وصول الخادمة`);
     }
   } catch (error) {
     console.error('خطأ في التحقق من التأشيرات المتأخرة:', error);
@@ -566,32 +587,209 @@ router.get('/:id/replacement-eligibility', async (req, res) => {
   }
 });
 
-// فحص التأشيرات المتأخرة (نقطة نهاية للمهام المجدولة)
+// التحقق من وصول الخادمة وتفعيل الموعد النهائي
+router.post('/:id/verify-arrival', async (req, res) => {
+  try {
+    const { arrivalDate, notes, verifiedBy } = req.body;
+    
+    const visa = await Visa.findById(req.params.id);
+    if (!visa) {
+      return res.status(404).json({ message: 'التأشيرة غير موجودة' });
+    }
+
+    // التحقق من أهلية التحقق من الوصول
+    if (!visa.isEligibleForArrivalVerification()) {
+      return res.status(400).json({ 
+        message: 'التأشيرة غير مؤهلة للتحقق من الوصول',
+        currentStage: visa.currentStage,
+        status: visa.status,
+        alreadyVerified: visa.maidArrivalVerified
+      });
+    }
+
+    // التحقق من صحة تاريخ الوصول
+    const arrival = new Date(arrivalDate);
+    const now = new Date();
+    const visaCreation = new Date(visa.createdAt);
+
+    if (arrival > now) {
+      return res.status(400).json({ message: 'تاريخ الوصول لا يمكن أن يكون في المستقبل' });
+    }
+
+    if (arrival < visaCreation) {
+      return res.status(400).json({ message: 'تاريخ الوصول لا يمكن أن يكون قبل إنشاء التأشيرة' });
+    }
+
+    // تحديث معلومات الوصول
+    visa.maidArrivalVerified = true;
+    visa.maidArrivalDate = arrival;
+    visa.maidArrivalVerifiedBy = verifiedBy;
+    visa.maidArrivalNotes = notes || '';
+    
+    // تحديث حالة الموعد النهائي
+    visa.updateDeadlineStatus();
+    
+    // تحديث المرحلة والحالة إذا لزم الأمر
+    if (visa.currentStage === 'د') {
+      visa.currentStage = 'وصول';
+      visa.status = 'معروضة_للبيع';
+    }
+
+    await visa.save();
+
+    console.log(`✅ تم التحقق من وصول الخادمة للتأشيرة ${visa.visaNumber}`);
+    console.log(`📅 تاريخ الوصول: ${arrival.toLocaleDateString('ar-SA')}`);
+    console.log(`⏰ الموعد النهائي للإلغاء: ${visa.activeCancellationDeadline?.toLocaleDateString('ar-SA')}`);
+
+    res.json({
+      message: 'تم التحقق من وصول الخادمة بنجاح',
+      visa: {
+        _id: visa._id,
+        visaNumber: visa.visaNumber,
+        maidArrivalVerified: visa.maidArrivalVerified,
+        maidArrivalDate: visa.maidArrivalDate,
+        activeCancellationDeadline: visa.activeCancellationDeadline,
+        deadlineStatus: visa.deadlineStatus,
+        daysUntilCancellation: visa.getDaysUntilCancellation(),
+        currentStage: visa.currentStage,
+        status: visa.status
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في التحقق من وصول الخادمة:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// الحصول على حالة وصول الخادمة والموعد النهائي
+router.get('/:id/arrival-status', async (req, res) => {
+  try {
+    const visa = await Visa.findById(req.params.id)
+      .populate('maidArrivalVerifiedBy', 'name code');
+    
+    if (!visa) {
+      return res.status(404).json({ message: 'التأشيرة غير موجودة' });
+    }
+
+    // تحديث حالة الموعد النهائي
+    visa.updateDeadlineStatus();
+    await visa.save();
+
+    const arrivalStatus = {
+      visaId: visa._id,
+      visaNumber: visa.visaNumber,
+      maidArrivalVerified: visa.maidArrivalVerified,
+      maidArrivalDate: visa.maidArrivalDate,
+      maidArrivalVerifiedBy: visa.maidArrivalVerifiedBy,
+      maidArrivalNotes: visa.maidArrivalNotes,
+      activeCancellationDeadline: visa.activeCancellationDeadline,
+      deadlineStatus: visa.deadlineStatus,
+      daysUntilCancellation: visa.getDaysUntilCancellation(),
+      eligibleForArrivalVerification: visa.isEligibleForArrivalVerification(),
+      currentStage: visa.currentStage,
+      status: visa.status
+    };
+
+    if (visa.maidArrivalVerified && visa.maidArrivalDate) {
+      const daysSinceArrival = Math.floor((new Date() - new Date(visa.maidArrivalDate)) / (1000 * 60 * 60 * 24));
+      arrivalStatus.daysSinceArrival = daysSinceArrival;
+    }
+
+    res.json(arrivalStatus);
+  } catch (error) {
+    console.error('خطأ في جلب حالة الوصول:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// الحصول على قائمة التأشيرات المؤهلة للتحقق من الوصول
+router.get('/pending-arrival-verification', async (req, res) => {
+  try {
+    const visas = await Visa.find({
+      currentStage: { $in: ['د', 'مكتملة'] },
+      status: { $in: ['قيد_الشراء', 'معروضة_للبيع'] },
+      maidArrivalVerified: false
+    })
+    .populate('secretary', 'name code')
+    .select('name visaNumber currentStage status secretary createdAt')
+    .sort({ createdAt: -1 });
+
+    console.log(`📋 Found ${visas.length} visas pending arrival verification`);
+
+    res.json({
+      visas,
+      count: visas.length,
+      message: `${visas.length} تأشيرة في انتظار التحقق من الوصول`
+    });
+  } catch (error) {
+    console.error('خطأ في جلب التأشيرات المؤهلة للتحقق من الوصول:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// فحص التأشيرات المتأخرة (نقطة نهاية للمهام المجدولة) - النظام الجديد
 router.post('/check-overdue', async (req, res) => {
   try {
+    // البحث عن التأشيرات التي وصلت الخادمة ولها موعد نهائي نشط منتهي
     const overdueVisas = await Visa.find({
-      status: { $in: ['قيد_الشراء', 'معروضة_للبيع'] },
-      visaDeadline: { $lt: new Date() }
+      maidArrivalVerified: true,
+      deadlineStatus: 'active',
+      activeCancellationDeadline: { $lt: new Date() },
+      status: { $in: ['قيد_الشراء', 'معروضة_للبيع', 'في_انتظار_الوصول'] }
     });
 
+    let cancelledCount = 0;
     for (const visa of overdueVisas) {
       visa.status = 'ملغاة';
       visa.cancelledAt = new Date();
-      visa.cancelledReason = 'تجاوز الموعد النهائي - إلغاء تلقائي';
+      visa.cancelledReason = 'انتهاء الموعد النهائي بعد وصول الخادمة (30 يوماً)';
       visa.currentStage = 'ملغاة';
+      visa.deadlineStatus = 'expired';
       await visa.save();
+      cancelledCount++;
 
       // إضافة الدين على السكرتيرة
       const secretary = await Secretary.findById(visa.secretary);
-      secretary.totalDebt += visa.totalExpenses;
-      secretary.activeVisas = secretary.activeVisas.filter(id => id.toString() !== visa._id.toString());
-      secretary.completedVisas = secretary.completedVisas.filter(id => id.toString() !== visa._id.toString());
-      secretary.cancelledVisas.push(visa._id);
-      await secretary.save();
+      if (secretary) {
+        secretary.totalDebt += visa.totalExpenses;
+        secretary.activeVisas = secretary.activeVisas.filter(id => id.toString() !== visa._id.toString());
+        secretary.completedVisas = secretary.completedVisas.filter(id => id.toString() !== visa._id.toString());
+        secretary.cancelledVisas.push(visa._id);
+        await secretary.save();
+      }
+      
+      console.log(`❌ تم إلغاء التأشيرة ${visa.visaNumber} - انتهى الموعد النهائي بعد وصول الخادمة`);
     }
 
-    res.json({ message: `تم إلغاء ${overdueVisas.length} تأشيرة متأخرة` });
+    // تحديث حالة المواعيد النهائية للتأشيرات النشطة
+    const activeVisas = await Visa.find({
+      maidArrivalVerified: true,
+      deadlineStatus: 'active',
+      status: { $in: ['قيد_الشراء', 'معروضة_للبيع', 'في_انتظار_الوصول'] }
+    });
+
+    let updatedCount = 0;
+    for (const visa of activeVisas) {
+      const oldStatus = visa.deadlineStatus;
+      visa.updateDeadlineStatus();
+      if (oldStatus !== visa.deadlineStatus) {
+        await visa.save();
+        updatedCount++;
+      }
+    }
+
+    console.log(`🔄 النظام الجديد: تم إلغاء ${cancelledCount} تأشيرة بعد انتهاء 30 يوماً من وصول الخادمة`);
+    console.log(`📊 تم تحديث حالة ${updatedCount} تأشيرة`);
+    
+    res.json({ 
+      message: `تم فحص التأشيرات المتأخرة وإلغاء ${cancelledCount} تأشيرة`,
+      cancelledCount,
+      updatedCount,
+      note: 'النظام الجديد: الإلغاء يتم فقط بعد 30 يوماً من وصول الخادمة',
+      explanation: 'التأشيرات التي لم تصل الخادمة بعد محمية من الإلغاء التلقائي'
+    });
   } catch (error) {
+    console.error('خطأ في فحص التأشيرات المتأخرة:', error);
     res.status(500).json({ message: error.message });
   }
 });
