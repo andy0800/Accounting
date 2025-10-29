@@ -11,6 +11,13 @@ let dashboardCache = {
   TTL: 5 * 60 * 1000 // 5 minutes
 };
 
+// Function to clear server-side cache
+const clearServerCache = () => {
+  dashboardCache.data = null;
+  dashboardCache.timestamp = 0;
+  console.log('🧹 Server-side dashboard cache cleared');
+};
+
 // الحصول على حساب الشركة (فرصتكم) - محسّن مع التخزين المؤقت
 router.get('/company', async (req, res) => {
   try {
@@ -659,6 +666,53 @@ router.get('/summary', async (req, res) => {
     res.json(summary);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Clear server-side cache endpoint
+router.post('/clear-cache', async (req, res) => {
+  try {
+    clearServerCache();
+    
+    res.json({
+      success: true,
+      message: 'Server-side cache cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('✅ Cache clearing request completed');
+  } catch (error) {
+    console.error('❌ Error clearing server cache:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear server cache',
+      error: error.message
+    });
+  }
+});
+
+// Get cache status endpoint
+router.get('/cache-status', async (req, res) => {
+  try {
+    const status = {
+      dashboardCache: {
+        hasData: !!dashboardCache.data,
+        timestamp: dashboardCache.timestamp,
+        age: dashboardCache.timestamp ? Date.now() - dashboardCache.timestamp : 0,
+        ttl: dashboardCache.TTL,
+        expired: dashboardCache.timestamp ? (Date.now() - dashboardCache.timestamp) > dashboardCache.TTL : true
+      },
+      serverTime: new Date().toISOString()
+    };
+    
+    res.json(status);
+  } catch (error) {
+    console.error('❌ Error getting cache status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get cache status',
+      error: error.message
+    });
   }
 });
 

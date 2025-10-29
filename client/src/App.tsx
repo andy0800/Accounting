@@ -9,6 +9,7 @@ import Navigation from './components/Navigation';
 import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { backendPreloader } from './utils/backendPreloader';
+import { cacheManager } from './utils/cacheManager';
 
 // Lazy load all components for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -219,9 +220,20 @@ const LoadingSpinner = () => (
 
 
 function App() {
-  // Warm up backend when app starts
+  // Warm up backend when app starts and initialize cache management
   React.useEffect(() => {
     backendPreloader.warmUpBackend();
+    
+    // Initialize cache management
+    console.log('🧹 Cache Manager initialized');
+    
+    // Schedule automatic cache clearing every 24 hours
+    cacheManager.scheduleAutoClear(24);
+    
+    // Clear expired caches on app start
+    cacheManager.clearSpecificCache('api').catch(error => {
+      console.warn('⚠️ Could not clear expired API cache:', error);
+    });
   }, []);
 
   return (

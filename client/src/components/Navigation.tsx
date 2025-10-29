@@ -26,6 +26,7 @@ import {
   Assessment,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import CacheClearButton from './CacheClearButton';
 
 const drawerWidth = 280;
 
@@ -113,6 +114,14 @@ const Navigation: React.FC = () => {
         ))}
       </List>
       
+      <Divider />
+      
+      {/* System Management */}
+      <List>
+        <ListItem sx={{ px: 2, py: 1 }}>
+          <CacheClearButton />
+        </ListItem>
+      </List>
 
     </Box>
   );

@@ -1,7 +1,11 @@
 // Service Worker for Advanced Caching
-const CACHE_NAME = 'visa-system-v1';
-const STATIC_CACHE = 'visa-system-static-v1';
-const API_CACHE = 'visa-system-api-v1';
+const CACHE_NAME = 'visa-system-v2'; // Updated version to force cache refresh
+const STATIC_CACHE = 'visa-system-static-v2';
+const API_CACHE = 'visa-system-api-v2';
+
+// Cache clearing messages
+const CACHE_CLEAR_MESSAGE = 'CLEAR_ALL_CACHES';
+const FORCE_REFRESH_MESSAGE = 'FORCE_REFRESH';
 
 // Files to cache immediately (keep minimal to avoid install failures on static hosts)
 const STATIC_FILES = [
@@ -233,4 +237,80 @@ self.addEventListener('push', (event) => {
   }
 });
 
-console.log('🚀 Service Worker loaded successfully');
+// Message handling for cache clearing
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker received message:', event.data);
+  
+  if (event.data && event.data.type === CACHE_CLEAR_MESSAGE) {
+    event.waitUntil(clearAllCaches().then(() => {
+      // Notify the client that caches are cleared
+      event.ports[0].postMessage({ success: true, message: 'All caches cleared' });
+    }));
+  }
+  
+  if (event.data && event.data.type === FORCE_REFRESH_MESSAGE) {
+    event.waitUntil(
+      clearAllCaches().then(() => {
+        // Force refresh all clients
+        return self.clients.matchAll();
+      }).then((clients) => {
+        clients.forEach(client => {
+          client.navigate(client.url);
+        });
+      })
+    );
+  }
+});
+
+// Clear all caches function
+async function clearAllCaches() {
+  console.log('🧹 Clearing all Service Worker caches...');
+  
+  try {
+    const cacheNames = await caches.keys();
+    const deletePromises = cacheNames.map(cacheName => {
+      console.log('🗑️ Deleting cache:', cacheName);
+      return caches.delete(cacheName);
+    });
+    
+    await Promise.all(deletePromises);
+    console.log('✅ All Service Worker caches cleared');
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error clearing caches:', error);
+    throw error;
+  }
+}
+
+// Clear expired cache entries
+async function clearExpiredCaches() {
+  console.log('🧹 Clearing expired cache entries...');
+  
+  try {
+    const cache = await caches.open(API_CACHE);
+    const requests = await cache.keys();
+    
+    for (const request of requests) {
+      const response = await cache.match(request);
+      if (response) {
+        const cacheTime = response.headers.get('sw-cache-time');
+        if (cacheTime && Date.now() - parseInt(cacheTime) > 24 * 60 * 60 * 1000) { // 24 hours
+          await cache.delete(request);
+          console.log('🗑️ Deleted expired cache entry:', request.url);
+        }
+      }
+    }
+    
+    console.log('✅ Expired cache entries cleared');
+  } catch (error) {
+    console.error('❌ Error clearing expired caches:', error);
+  }
+}
+
+// Schedule periodic cache cleanup
+setInterval(() => {
+  clearExpiredCaches();
+}, 60 * 60 * 1000); // Every hour
+
+console.log('🚀 Service Worker loaded successfully with cache management');
