@@ -57,24 +57,57 @@ const Dashboard: React.FC = () => {
         setRetryAttempt(retryCount);
       }
       
-      const response = await apiClient.get('/api/accounts/summary');
-      setData(response.data);
-      setRetryAttempt(0);
-      setIsRetrying(false);
+      console.log(`📊 Fetching dashboard data (attempt ${retryCount + 1})...`);
+      
+      // Enhanced timeout and configuration for Render free tier
+      const response = await apiClient.get('/api/accounts/summary', {
+        timeout: 120000, // 2 minutes for dashboard
+        validateStatus: (status) => status < 500
+      });
+      
+      if (response.data) {
+        setData(response.data);
+        setRetryAttempt(0);
+        setIsRetrying(false);
+        console.log('✅ Dashboard data loaded successfully');
+      } else {
+        throw new Error('No data received from server');
+      }
     } catch (error: any) {
       console.error('خطأ في جلب بيانات لوحة التحكم:', error);
       
-      // Retry logic for timeout errors (Render free tier can be slow)
-      if (error.code === 'ECONNABORTED' && retryCount < 2) {
-        console.log(`🔄 Retrying request (attempt ${retryCount + 1}/2)...`);
+      // Enhanced retry logic with more conditions
+      const maxRetries = 4; // Increased retries
+      const shouldRetry = retryCount < maxRetries && (
+        error.code === 'ECONNABORTED' || 
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        !error.response ||
+        (error.response && error.response.status >= 500)
+      );
+      
+      if (shouldRetry) {
+        // Progressive delay: 3s, 6s, 12s, 24s
+        const delay = Math.min(3000 * Math.pow(2, retryCount), 30000);
+        console.log(`🔄 Retrying dashboard request (attempt ${retryCount + 1}/${maxRetries}) in ${delay}ms...`);
+        
+        if (error.code === 'ECONNABORTED') {
+          console.log('❄️ Dashboard timeout - backend cold starting (normal on Render free tier)');
+        }
+        
         setTimeout(() => {
           fetchDashboardData(retryCount + 1);
-        }, 2000 * (retryCount + 1)); // Exponential backoff
+        }, delay);
         return;
       }
       
-      // Log error but don't set error state since it was removed
-      console.error('فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.');
+      // Final failure - log comprehensive error info
+      console.error('❌ Dashboard loading failed after all retries');
+      console.error(`Error code: ${error.code}`);
+      console.error(`Response status: ${error.response?.status}`);
+      console.error('💡 This is common on Render free tier during cold starts');
+      
       setIsRetrying(false);
     } finally {
       setLoading(false);

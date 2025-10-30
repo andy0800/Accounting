@@ -136,6 +136,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes
+app.use('/api/health', require('./routes/health'));
 app.use('/api/secretaries', require('./routes/secretaries'));
 app.use('/api/visas', require('./routes/visas'));
 app.use('/api/accounts', require('./routes/accounts'));
