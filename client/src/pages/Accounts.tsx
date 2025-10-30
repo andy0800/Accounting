@@ -62,11 +62,11 @@ interface CompanyAccount {
       visaId: string;
       reference: string;
       name: string;
-      secretary: {
+      secretary?: {
         _id: string;
         name: string;
         code: string;
-      };
+      } | null;
       sellingPrice: number;
       totalExpenses: number;
       profit: number;
@@ -78,11 +78,11 @@ interface CompanyAccount {
       visaId: string;
       reference: string;
       name: string;
-      secretary: {
+      secretary?: {
         _id: string;
         name: string;
         code: string;
-      };
+      } | null;
       status: string;
       currentStage: string;
       totalExpenses: number;
@@ -578,7 +578,9 @@ const Accounts: React.FC = () => {
                             <TableRow key={visa.visaId}>
                               <TableCell>{visa.reference}</TableCell>
                               <TableCell>{visa.name}</TableCell>
-                              <TableCell>{visa.secretary.name} ({visa.secretary.code})</TableCell>
+                              <TableCell>
+                                {visa.secretary?.name || 'غير محدد'} ({visa.secretary?.code || 'غير محدد'})
+                              </TableCell>
                               <TableCell>{visa.sellingPrice.toLocaleString()} دينار</TableCell>
                               <TableCell>{visa.totalExpenses.toLocaleString()} دينار</TableCell>
                               <TableCell>{visa.profit.toLocaleString()} دينار</TableCell>
@@ -729,10 +731,10 @@ const Accounts: React.FC = () => {
                                 <TableCell>
                                   <Box>
                                     <Typography variant="body2" fontWeight="medium">
-                                      {visa.secretary.name}
+                                      {visa.secretary?.name || 'غير محدد'}
                                     </Typography>
                                     <Typography variant="caption" color="textSecondary">
-                                      {visa.secretary.code}
+                                      {visa.secretary?.code || 'غير محدد'}
                                     </Typography>
                                   </Box>
                                 </TableCell>

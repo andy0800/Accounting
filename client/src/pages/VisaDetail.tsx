@@ -52,11 +52,11 @@ interface Visa {
   nationality: string;
   passportNumber: string;
   visaNumber: string;
-  secretary: {
+  secretary?: {
     _id: string;
     name: string;
     code: string;
-  };
+  } | null;
   secretaryCode: string;
   orderNumber: number;
   middlemanName: string;
@@ -623,8 +623,14 @@ const VisaDetail: React.FC = () => {
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">السكرتيرة المسؤولة</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body1">{visa.secretary.name}</Typography>
-                      <Chip label={visa.secretary.code} size="small" />
+                      <Typography variant="body1">
+                        {visa.secretary?.name || 'غير محدد'}
+                      </Typography>
+                      <Chip 
+                        label={visa.secretary?.code || 'غير محدد'} 
+                        size="small" 
+                        color={visa.secretary ? 'default' : 'error'}
+                      />
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>

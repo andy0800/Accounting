@@ -43,10 +43,10 @@ interface Visa {
   profit?: number;
   secretaryEarnings?: number;
   visaDeadline: string;
-  secretary: {
+  secretary?: {
     name: string;
     code: string;
-  };
+  } | null;
   createdAt: string;
 }
 
@@ -298,7 +298,11 @@ const Visas: React.FC = () => {
                     <TableCell>{visa.nationality}</TableCell>
                     <TableCell>{visa.passportNumber}</TableCell>
                     <TableCell>
-                      <Chip label={visa.secretary.code} size="small" />
+                      <Chip 
+                        label={visa.secretary?.code || 'غير محدد'} 
+                        size="small" 
+                        color={visa.secretary ? 'default' : 'error'}
+                      />
                     </TableCell>
                     <TableCell>
                       <Chip 
