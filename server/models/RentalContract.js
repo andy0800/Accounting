@@ -59,7 +59,9 @@ const rentalContractSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
-  }
+  },
+  // Fixed reference number for rental contract
+  referenceNumber: { type: String, unique: true, sparse: true }
 }, {
   timestamps: true
 });
@@ -67,5 +69,17 @@ const rentalContractSchema = new mongoose.Schema({
 // Index for better search performance
 rentalContractSchema.index({ secretaryId: 1, status: 1 });
 rentalContractSchema.index({ unitNumber: 1, status: 1 });
+rentalContractSchema.index({ referenceNumber: 1 }, { unique: true, sparse: true });
+
+// Generate reference number on create if missing
+rentalContractSchema.pre('save', function(next) {
+	if (!this.referenceNumber) {
+		const created = this.createdAt ? new Date(this.createdAt) : new Date();
+		const year = created.getFullYear();
+		const shortId = this._id ? this._id.toString().slice(-6).toUpperCase() : Math.random().toString(36).slice(-6).toUpperCase();
+		this.referenceNumber = `RC-${year}-${shortId}`;
+	}
+	next();
+});
 
 module.exports = mongoose.model('RentalContract', rentalContractSchema);

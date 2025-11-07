@@ -29,6 +29,7 @@ import apiClient from '../config/axios';
 
 interface TrialContract {
 	_id: string;
+	referenceNumber?: string;
 	contractNumber?: string;
 	sponsorName: string;
 	sponsorCivilId: string;
@@ -138,7 +139,8 @@ const TrialContracts: React.FC = () => {
 					<TableContainer component={Paper}>
 						<Table>
 							<TableHead>
-								<TableRow>
+									<TableRow>
+										<TableCell>رقم المرجع</TableCell>
 									<TableCell>رقم العقد</TableCell>
 									<TableCell>اسم الكفيل</TableCell>
 									<TableCell>اسم العاملة</TableCell>
@@ -155,6 +157,7 @@ const TrialContracts: React.FC = () => {
 							<TableBody>
 								{contracts.map((c) => (
 									<TableRow key={c._id}>
+										<TableCell>{c.referenceNumber || '-'}</TableCell>
 										<TableCell>{c.contractNumber || '-'}</TableCell>
 										<TableCell>{c.sponsorName}</TableCell>
 										<TableCell>{c.workerName}</TableCell>

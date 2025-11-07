@@ -18,6 +18,7 @@ import apiClient from '../config/axios';
 interface TrialContract {
 	_id: string;
 	contractNumber?: string;
+	referenceNumber?: string;
 	status: 'draft' | 'finalized';
 	createdAt?: string;
 	sponsorName: string;
@@ -157,7 +158,10 @@ const TrialContractDetail: React.FC = () => {
 
 					<div id="print-area" ref={printRef}>
 						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-							<Typography variant="h6">{contract.contractNumber || 'عقد (مسودة)'}</Typography>
+							<Box>
+								<Typography variant="h6">مرجع: {contract.referenceNumber || '—'}</Typography>
+								<Typography variant="body2">رقم العقد: {contract.contractNumber || 'مسودة'}</Typography>
+							</Box>
 							<Typography variant="body2">التاريخ: {formatDate(contract.createdAt as any)}</Typography>
 						</Box>
 

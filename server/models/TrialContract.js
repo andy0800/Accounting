@@ -49,6 +49,7 @@ const trialContractSchema = new mongoose.Schema({
 	// Status & numbering
 	status: { type: String, enum: ['draft', 'finalized'], default: 'draft' },
 	contractNumber: { type: String, unique: true, sparse: true }, // set on finalize
+	referenceNumber: { type: String, unique: true, sparse: true }, // fixed at creation
 
 	// Timestamps
 	createdAt: { type: Date, default: Date.now },
@@ -62,6 +63,12 @@ trialContractSchema.pre('save', function(next) {
 		const balance = this.agreedAmountKwd - this.advancePaymentKwd;
 		this.balancePaymentKwd = balance >= 0 ? balance : 0;
 	}
+	// generate fixed reference number once
+	if (!this.referenceNumber) {
+		const year = (this.createdAt ? new Date(this.createdAt) : new Date()).getFullYear();
+		const shortId = this._id ? this._id.toString().slice(-6).toUpperCase() : Math.random().toString(36).slice(-6).toUpperCase();
+		this.referenceNumber = `TR-${year}-${shortId}`;
+	}
 	next();
 });
 
@@ -69,6 +76,7 @@ trialContractSchema.pre('save', function(next) {
 trialContractSchema.index({ sponsorCivilId: 1 });
 trialContractSchema.index({ workerPassportNo: 1 });
 trialContractSchema.index({ createdAt: -1 });
+trialContractSchema.index({ referenceNumber: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('TrialContract', trialContractSchema);
 

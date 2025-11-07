@@ -6,6 +6,17 @@ const fs = require('fs');
 const RentalContract = require('../models/RentalContract');
 const RentingSecretary = require('../models/RentingSecretary');
 const RentalPayment = require('../models/RentalPayment');
+// Ensure reference number exists (backfill for existing docs)
+async function ensureReferenceNumber(contract) {
+  if (!contract.referenceNumber) {
+    const created = contract.createdAt ? new Date(contract.createdAt) : new Date();
+    const year = created.getFullYear();
+    const shortId = contract._id.toString().slice(-6).toUpperCase();
+    contract.referenceNumber = `RC-${year}-${shortId}`;
+    await contract.save();
+  }
+  return contract;
+}
 
 // Configure multer for document uploads
 const storage = multer.diskStorage({
@@ -75,7 +86,9 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
-    
+    // Backfill missing refs
+    await Promise.all(contracts.map(c => ensureReferenceNumber(c)));
+
     const total = await RentalContract.countDocuments(query);
     
     res.json({
@@ -100,7 +113,9 @@ router.get('/:id', async (req, res) => {
     if (!contract) {
       return res.status(404).json({ message: 'العقد غير موجود' });
     }
-    
+    // Backfill missing reference number
+    await ensureReferenceNumber(contract);
+
     res.json(contract);
   } catch (error) {
     res.status(500).json({ message: 'خطأ في جلب بيانات العقد', error: error.message });

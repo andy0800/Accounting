@@ -25,6 +25,16 @@ async function validateLinkedSoldVisas(visaIds) {
 	}));
 }
 
+async function ensureReferenceNumber(contract) {
+	if (!contract.referenceNumber) {
+		const year = (contract.createdAt ? new Date(contract.createdAt) : new Date()).getFullYear();
+		const shortId = contract._id.toString().slice(-6).toUpperCase();
+		contract.referenceNumber = `TR-${year}-${shortId}`;
+		await contract.save();
+	}
+	return contract;
+}
+
 // List trial contracts with filters and pagination
 router.get('/', async (req, res) => {
 	try {
@@ -51,6 +61,9 @@ router.get('/', async (req, res) => {
 			TrialContract.countDocuments(query)
 		]);
 
+		// Backfill missing reference numbers
+		await Promise.all(contracts.map(c => ensureReferenceNumber(c)));
+
 		res.json({
 			contracts,
 			pagination: {
@@ -69,6 +82,7 @@ router.get('/:id', async (req, res) => {
 	try {
 		const contract = await TrialContract.findById(req.params.id);
 		if (!contract) return res.status(404).json({ message: 'العقد غير موجود' });
+		await ensureReferenceNumber(contract);
 		res.json(contract);
 	} catch (error) {
 		res.status(500).json({ message: 'خطأ في جلب العقد', error: error.message });

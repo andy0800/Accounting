@@ -95,6 +95,7 @@ interface RentalContract {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  referenceNumber?: string;
 }
 
 interface RentalPayment {
@@ -383,7 +384,7 @@ const RentalDetail: React.FC = () => {
             العودة
           </Button>
           <Typography variant="h4" component="h1">
-            تفاصيل العقد الإيجاري
+            تفاصيل العقد الإيجاري {contract.referenceNumber ? `- مرجع: ${contract.referenceNumber}` : ''}
           </Typography>
         </Box>
         <Box>
