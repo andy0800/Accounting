@@ -91,10 +91,13 @@ apiClient.interceptors.request.use(
     // Fresh responses will still be cached in the response interceptor.
     
     // Add any auth tokens here if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (_) {}
     
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;

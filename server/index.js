@@ -141,6 +141,9 @@ app.use('/api/secretaries', require('./routes/secretaries'));
 app.use('/api/visas', require('./routes/visas'));
 app.use('/api/accounts', require('./routes/accounts'));
 app.use('/api/exports', require('./routes/exports'));
+// Auth & Users
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 // Trial contracts (visa handover/probation)
 app.use('/api/trial-contracts', require('./routes/trial-contracts'));
 

@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CacheClearButton from './CacheClearButton';
+import { auth } from '../utils/auth';
 
 const drawerWidth = 280;
 
@@ -35,23 +36,26 @@ const Navigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const role = auth.getRole();
+
   const menuItems = [
-    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/', section: 'main' },
-    { text: 'السكرتارية', icon: <PeopleIcon />, path: '/secretaries', section: 'visa' },
-    { text: 'التأشيرات', icon: <VisaIcon />, path: '/visas', section: 'visa' },
-    { text: 'الحسابات', icon: <AccountIcon />, path: '/accounts', section: 'visa' },
-    { text: 'تأشيرة جديدة', icon: <AddIcon />, path: '/visas/new', section: 'visa' },
-    { text: 'عقود التجربة', icon: <Description />, path: '/trial-contracts', section: 'visa' },
-    { text: 'عقد تجربة جديد', icon: <AddIcon />, path: '/trial-contracts/new', section: 'visa' },
+    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/', section: 'main', roles: ['admin'] },
+    { text: 'السكرتارية', icon: <PeopleIcon />, path: '/secretaries', section: 'visa', roles: ['admin'] },
+    { text: 'التأشيرات', icon: <VisaIcon />, path: '/visas', section: 'visa', roles: ['admin'] },
+    { text: 'الحسابات', icon: <AccountIcon />, path: '/accounts', section: 'visa', roles: ['admin'] },
+    { text: 'تأشيرة جديدة', icon: <AddIcon />, path: '/visas/new', section: 'visa', roles: ['admin'] },
+    { text: 'عقود التجربة', icon: <Description />, path: '/trial-contracts', section: 'visa', roles: ['admin','secretary'] },
+    { text: 'عقد تجربة جديد', icon: <AddIcon />, path: '/trial-contracts/new', section: 'visa', roles: ['admin','secretary'] },
+    { text: 'المستخدمون', icon: <PeopleIcon />, path: '/users', section: 'admin', roles: ['admin'] },
   ];
 
   const rentingMenuItems = [
-    { text: 'نظام التأجير', icon: <HomeIcon />, path: '/renting', section: 'renting' },
-    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/renting/secretaries', section: 'renting' },
-    { text: 'الوحدات المؤجرة', icon: <ApartmentIcon />, path: '/renting/units', section: 'renting' },
-    { text: 'عقود التأجير', icon: <Description />, path: '/renting/contracts', section: 'renting' },
-    { text: 'العقود المنتهية', icon: <Description />, path: '/renting/terminated', section: 'renting' },
-    { text: 'التقارير', icon: <Assessment />, path: '/renting/reports', section: 'renting' },
+    { text: 'نظام التأجير', icon: <HomeIcon />, path: '/renting', section: 'renting', roles: ['admin'] },
+    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/renting/secretaries', section: 'renting', roles: ['admin'] },
+    { text: 'الوحدات المؤجرة', icon: <ApartmentIcon />, path: '/renting/units', section: 'renting', roles: ['admin'] },
+    { text: 'عقود التأجير', icon: <Description />, path: '/renting/contracts', section: 'renting', roles: ['admin','secretary'] },
+    { text: 'العقود المنتهية', icon: <Description />, path: '/renting/terminated', section: 'renting', roles: ['admin'] },
+    { text: 'التقارير', icon: <Assessment />, path: '/renting/reports', section: 'renting', roles: ['admin'] },
   ];
 
   const handleDrawerToggle = () => {
@@ -71,10 +75,8 @@ const Navigation: React.FC = () => {
         </Typography>
       </Toolbar>
       <Divider />
-      
-      {/* Main System */}
       <List>
-        {menuItems.map((item) => (
+        {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
           <ListItem
             button
             key={item.text}
@@ -86,10 +88,7 @@ const Navigation: React.FC = () => {
           </ListItem>
         ))}
       </List>
-      
       <Divider />
-      
-      {/* Renting System Section */}
       <List>
         <ListItem sx={{ py: 1 }}>
           <ListItemText 
@@ -102,7 +101,7 @@ const Navigation: React.FC = () => {
             }} 
           />
         </ListItem>
-        {rentingMenuItems.map((item) => (
+        {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
           <ListItem
             button
             key={item.text}
@@ -115,16 +114,12 @@ const Navigation: React.FC = () => {
           </ListItem>
         ))}
       </List>
-      
       <Divider />
-      
-      {/* System Management */}
       <List>
         <ListItem sx={{ px: 2, py: 1 }}>
           <CacheClearButton />
         </ListItem>
       </List>
-
     </Box>
   );
 

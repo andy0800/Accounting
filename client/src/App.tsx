@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Box, Container, ThemeProvider, createTheme, CssBaseline, CircularProgress } from '@mui/material';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
@@ -34,6 +34,9 @@ const TerminatedRentals = React.lazy(() => import('./pages/TerminatedRentals'));
 const RentalDetail = React.lazy(() => import('./pages/RentalDetail'));
 const RentalPayments = React.lazy(() => import('./pages/RentalPayments'));
 const RentingReports = React.lazy(() => import('./pages/RentingReports'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Users = React.lazy(() => import('./pages/Users'));
+import { auth } from './utils/auth';
 
 
 // Create rtl cache
@@ -240,6 +243,27 @@ function App() {
     });
   }, []);
 
+  const location = useLocation();
+  const isLogged = auth.isLoggedIn();
+  const role = auth.getRole();
+
+  // Allowed routes for secretary
+  const secretaryAllowed = new Set([
+    '/trial-contracts', '/trial-contracts/new',
+    '/renting/contracts', '/renting/contracts/new'
+  ]);
+
+  const protect = (element: JSX.Element, path: string) => {
+    if (!isLogged) return <Navigate to="/login" state={{ from: location }} replace />;
+    if (role === 'admin') return element;
+    if (role === 'secretary') {
+      // allow trial and renting contract routes and their details
+      if (path.startsWith('/trial-contracts') || path.startsWith('/renting/contracts')) return element;
+      return <Navigate to="/trial-contracts" replace />;
+    }
+    return <Navigate to="/login" replace />;
+  };
+
   return (
     <CacheProvider value={cacheRtl}>
       <ThemeProvider theme={theme}>
@@ -251,30 +275,34 @@ function App() {
               <ErrorBoundary>
                 <Suspense fallback={<LoadingSpinner />}>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/secretaries" element={<Secretaries />} />
-                    <Route path="/secretaries/:id" element={<SecretaryDetail />} />
-                    <Route path="/visas" element={<Visas />} />
-                    <Route path="/visas/:id" element={<VisaDetail />} />
-                    <Route path="/visas/new" element={<NewVisa />} />
-                    <Route path="/accounts" element={<Accounts />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={protect(<Dashboard />, '/')} />
+                    <Route path="/secretaries" element={protect(<Secretaries />, '/secretaries')} />
+                    <Route path="/secretaries/:id" element={protect(<SecretaryDetail />, '/secretaries/:id')} />
+                    <Route path="/visas" element={protect(<Visas />, '/visas')} />
+                    <Route path="/visas/:id" element={protect(<VisaDetail />, '/visas/:id')} />
+                    <Route path="/visas/new" element={protect(<NewVisa />, '/visas/new')} />
+                    <Route path="/accounts" element={protect(<Accounts />, '/accounts')} />
                     {/* Trial Contracts (Visa Handover) */}
-                    <Route path="/trial-contracts" element={<TrialContracts />} />
-                    <Route path="/trial-contracts/new" element={<NewTrialContract />} />
-                    <Route path="/trial-contracts/:id" element={<TrialContractDetail />} />
+                    <Route path="/trial-contracts" element={protect(<TrialContracts />, '/trial-contracts')} />
+                    <Route path="/trial-contracts/new" element={protect(<NewTrialContract />, '/trial-contracts/new')} />
+                    <Route path="/trial-contracts/:id" element={protect(<TrialContractDetail />, '/trial-contracts/:id')} />
                     
                     {/* Renting System Routes */}
-                    <Route path="/renting" element={<RentingDashboard />} />
-                    <Route path="/renting/secretaries" element={<RentingSecretaries />} />
-                    <Route path="/renting/secretaries/new" element={<NewRentingSecretary />} />
-                    <Route path="/renting/units" element={<RentalUnits />} />
-                    <Route path="/renting/units/new" element={<NewRentalUnit />} />
-                    <Route path="/renting/contracts" element={<RentalContracts />} />
-                    <Route path="/renting/contracts/new" element={<NewRentalContract />} />
-                    <Route path="/renting/contracts/:id" element={<RentalDetail />} />
-                    <Route path="/renting/payments/:id" element={<RentalPayments />} />
-                    <Route path="/renting/terminated" element={<TerminatedRentals />} />
-                    <Route path="/renting/reports" element={<RentingReports />} />
+                    <Route path="/renting" element={protect(<RentingDashboard />, '/renting')} />
+                    <Route path="/renting/secretaries" element={protect(<RentingSecretaries />, '/renting/secretaries')} />
+                    <Route path="/renting/secretaries/new" element={protect(<NewRentingSecretary />, '/renting/secretaries/new')} />
+                    <Route path="/renting/units" element={protect(<RentalUnits />, '/renting/units')} />
+                    <Route path="/renting/units/new" element={protect(<NewRentalUnit />, '/renting/units/new')} />
+                    <Route path="/renting/contracts" element={protect(<RentalContracts />, '/renting/contracts')} />
+                    <Route path="/renting/contracts/new" element={protect(<NewRentalContract />, '/renting/contracts/new')} />
+                    <Route path="/renting/contracts/:id" element={protect(<RentalDetail />, '/renting/contracts/:id')} />
+                    <Route path="/renting/payments/:id" element={protect(<RentalPayments />, '/renting/payments/:id')} />
+                    <Route path="/renting/terminated" element={protect(<TerminatedRentals />, '/renting/terminated')} />
+                    <Route path="/renting/reports" element={protect(<RentingReports />, '/renting/reports')} />
+
+                    {/* Users (admin only) */}
+                    <Route path="/users" element={protect(<Users />, '/users')} />
                     
                     {/* Fallback route for 404 errors */}
                     <Route path="*" element={
