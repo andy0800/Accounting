@@ -10,6 +10,7 @@ const FORCE_REFRESH_MESSAGE = 'FORCE_REFRESH';
 // Files to cache immediately (keep minimal to avoid install failures on static hosts)
 const STATIC_FILES = [
   '/',
+  '/index.html',
   '/manifest.json'
 ];
 
@@ -162,21 +163,27 @@ async function handleStaticRequest(request) {
   }
 }
 
-// Navigation handler - network first
+// Navigation handler - network first with SPA fallback to index.html on 4xx/5xx
 async function handleNavigationRequest(request) {
   try {
     const networkResponse = await fetch(request);
+    // If server returns an error for deep link, fallback to cached index.html (SPA)
+    if (!networkResponse || !networkResponse.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      const spa = (await cache.match('/index.html')) || (await cache.match('/'));
+      if (spa) return spa;
+      // As last resort, fetch index.html directly
+      try {
+        const idx = await fetch('/index.html');
+        if (idx && idx.ok) return idx;
+      } catch (_) {}
+    }
     return networkResponse;
   } catch (error) {
     console.log('🌐 Network unavailable, serving offline page');
-    
     const cache = await caches.open(STATIC_CACHE);
-    const offlineResponse = await cache.match('/');
-    
-    if (offlineResponse) {
-      return offlineResponse;
-    }
-    
+    const spa = (await cache.match('/index.html')) || (await cache.match('/'));
+    if (spa) return spa;
     return new Response(
       `
       <!DOCTYPE html>
