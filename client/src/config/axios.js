@@ -84,26 +84,11 @@ const wakeUpBackend = async () => {
   }
 };
 
-// Request interceptor with cache check
+// Request interceptor (no short-circuit cache)
 apiClient.interceptors.request.use(
   (config) => {
-    // Check cache for GET requests
-    if (config.method === 'get') {
-      const cacheKey = config.url;
-      const cached = cache.get(cacheKey);
-      
-      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-        console.log(`📦 Cache hit: ${config.url}`);
-        return Promise.resolve({
-          ...config,
-          data: cached.data,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config
-        });
-      }
-    }
+    // No request-time cache serving; always proceed to network.
+    // Fresh responses will still be cached in the response interceptor.
     
     // Add any auth tokens here if needed
     // const token = localStorage.getItem('token');

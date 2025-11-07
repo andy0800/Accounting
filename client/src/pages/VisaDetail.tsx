@@ -193,10 +193,11 @@ const VisaDetail: React.FC = () => {
 
   const fetchVisaDetails = useCallback(async () => {
     try {
+      const ts = Date.now();
       const [visaResponse, eligibilityResponse, arrivalResponse] = await Promise.all([
-        apiClient.get(`/api/visas/${id}`),
-        apiClient.get(`/api/visas/${id}/replacement-eligibility`),
-        apiClient.get(`/api/visas/${id}/arrival-status`) // New API call
+        apiClient.get(`/api/visas/${id}`, { params: { t: ts } }),
+        apiClient.get(`/api/visas/${id}/replacement-eligibility`, { params: { t: ts } }),
+        apiClient.get(`/api/visas/${id}/arrival-status`, { params: { t: ts } }) // New API call
       ]);
       
       setVisa(visaResponse.data);

@@ -302,14 +302,9 @@ visaSchema.methods.updateDeadlineStatus = function() {
 };
 
 // التحقق من أهلية التحقق من الوصول
+// متاح عبر جميع المراحل مباشرة بعد إنشاء التأشيرة طالما لم يتم التحقق سابقاً ولم تكن ملغاة
 visaSchema.methods.isEligibleForArrivalVerification = function() {
-  // يجب أن تكون التأشيرة في المرحلة د أو مكتملة
-  const eligibleStages = ['د', 'مكتملة'];
-  const eligibleStatuses = ['قيد_الشراء', 'معروضة_للبيع'];
-  
-  return eligibleStages.includes(this.currentStage) && 
-         eligibleStatuses.includes(this.status) &&
-         !this.maidArrivalVerified;
+  return !this.maidArrivalVerified && this.status !== 'ملغاة';
 };
 
 // حساب الأيام المتبقية قبل الإلغاء
