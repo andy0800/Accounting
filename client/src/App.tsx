@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Container, ThemeProvider, createTheme, CssBaseline, CircularProgress } from '@mui/material';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
@@ -243,7 +243,17 @@ function App() {
     });
   }, []);
 
+  // Force login on full refresh (component mount)
   const location = useLocation();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    // Clear any existing session and redirect to login
+    auth.logout();
+    navigate('/login', { replace: true });
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isLogged = auth.isLoggedIn();
   const role = auth.getRole();
 

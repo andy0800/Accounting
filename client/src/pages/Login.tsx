@@ -58,9 +58,7 @@ const Login: React.FC = () => {
               {loading ? 'جاري الدخول...' : 'دخول'}
             </Button>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            مشرف النظام الافتراضي: admin / Aa@09876
-          </Typography>
+          {/* Removed visible default credentials for security */}
         </CardContent>
       </Card>
     </Container>
