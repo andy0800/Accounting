@@ -147,122 +147,126 @@ const TrialContractDetail: React.FC = () => {
 					</Typography>
 					<Divider sx={{ mb: 2 }} />
 
-					{/* Print styles */}
-					<style>{`
-					@media print {
-					  body * { visibility: hidden; }
-					  #print-area, #print-area * { visibility: visible; }
-					  #print-area { position: absolute; left: 0; top: 0; width: 210mm; padding: 12mm; }
-					}
-					`}</style>
+          {/* Print + on-screen styles for the contract document */}
+          <style>{`
+          .print-root {
+            font-family: 'Inter', 'Cairo', 'Roboto', Arial, sans-serif;
+            color: #222;
+            line-height: 1.4;
+          }
+          .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 2px solid #111; padding-bottom: 8mm; margin-bottom: 6mm;
+          }
+          .title-ar { font-weight: 700; font-size: 18pt; font-family: 'Cairo', 'Roboto', sans-serif; }
+          .title-en { font-weight: 700; font-size: 14pt; font-family: 'Inter', 'Roboto', sans-serif; color: #444; }
+          .meta { font-size: 11pt; color: #333; }
+          .meta .label { color: #666; }
+          .section-title { font-weight: 700; font-size: 12.5pt; margin: 10mm 0 4mm; }
+          .bilingual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+          .lang-box { border: 1px solid #ddd; padding: 6mm; border-radius: 6px; background: #fff; }
+          .lang-ar { direction: rtl; text-align: right; font-family: 'Cairo', 'Roboto', sans-serif; }
+          .lang-en { direction: ltr; text-align: left; font-family: 'Inter', 'Roboto', sans-serif; }
+          .row { display: grid; grid-template-columns: 1.2fr 1.8fr; align-items: end; gap: 6mm; margin-bottom: 4mm; }
+          .label { color: #555; font-size: 11pt; }
+          .fill { border-bottom: 1px dotted #777; min-height: 18px; font-size: 11.5pt; padding-bottom: 2px; }
+          .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+          .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-top: 8mm; }
+          .sig-box { height: 24mm; border-top: 2px solid #222; margin-top: 10mm; }
+          .muted { color: #666; }
+          .small { font-size: 10pt; }
+          @page { size: A4; margin: 12mm; }
+          @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 210mm; padding: 0; }
+            .no-print { display: none !important; }
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+          }
+          `}</style>
 
-					<div id="print-area" ref={printRef}>
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-							<Box>
-								<Typography variant="h6">مرجع: {contract.referenceNumber || '—'}</Typography>
-								<Typography variant="body2">رقم العقد: {contract.contractNumber || 'مسودة'}</Typography>
-							</Box>
-							<Typography variant="body2">التاريخ: {formatDate(contract.createdAt as any)}</Typography>
-						</Box>
+          <div id="print-area" ref={printRef} className="print-root">
+            <div className="header">
+              <div>
+                <div className="title-ar">عقد تسليم عاملة منزلية للتجربة</div>
+                <div className="title-en">CONTRACT FOR HANDOVER OF FEMALE DOMESTIC WORKER</div>
+              </div>
+              <div className="meta">
+                <div><span className="label">مرجع:</span> {contract.referenceNumber || '—'}</div>
+                <div><span className="label">رقم العقد:</span> {contract.contractNumber || 'مسودة'}</div>
+                <div><span className="label">التاريخ:</span> {formatDate(contract.createdAt as any)}</div>
+              </div>
+            </div>
 
-						{/* Fillable details bilingual grid */}
-						<Grid container spacing={1}>
-							<Grid item xs={12} md={6}>
-								<Typography>اسم الطرف الثاني (Name of the Sponsor): {contract.sponsorName}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>الرقم المدني (Civil ID No.): {contract.sponsorCivilId}</Typography>
-							</Grid>
+            {/* Bilingual fillable details */}
+            <div className="bilingual-grid">
+              <div className="lang-box lang-ar">
+                <div className="section-title">البيانات</div>
+                <div className="row"><div className="label">اسم الطرف الثاني</div><div className="fill">{contract.sponsorName}</div></div>
+                <div className="row"><div className="label">الرقم المدني</div><div className="fill">{contract.sponsorCivilId}</div></div>
+                <div className="row"><div className="label">اسم العاملة</div><div className="fill">{contract.workerName}</div></div>
+                <div className="row"><div className="label">رقم الجواز</div><div className="fill">{contract.workerPassportNo}</div></div>
+                <div className="row"><div className="label">تاريخ استلام العاملة</div><div className="fill">{formatDate(contract.dateOfReceipt)}</div></div>
+                <div className="row"><div className="label">تاريخ انتهاء العقد</div><div className="fill">{formatDate(contract.expiryDate)}</div></div>
+                <div className="row"><div className="label">الوقت</div><div className="fill">{contract.timeOfReceipt}</div></div>
+                <div className="row"><div className="label">هاتف</div><div className="fill">{contract.phoneNumber}</div></div>
+                <div className="row"><div className="label">المبلغ المتفق عليه (د.ك)</div><div className="fill">{formatKwd(contract.agreedAmountKwd)}</div></div>
+                <div className="row"><div className="label">الراتب (د.ك)</div><div className="fill">{formatKwd(contract.salaryKwd)}</div></div>
+                <div className="row"><div className="label">الدفعة المقدمة</div><div className="fill">{formatKwd(contract.advancePaymentKwd)}</div></div>
+                <div className="row"><div className="label">الدفعة المتبقية</div><div className="fill">{formatKwd(contract.balancePaymentKwd)}</div></div>
+                <div className="row"><div className="label">العنوان</div><div className="fill">المنطقة {contract.address?.area}, قطعة {contract.address?.block}, الشارع {contract.address?.street}, المنزل {contract.address?.house}</div></div>
+              </div>
+              <div className="lang-box lang-en">
+                <div className="section-title">Details</div>
+                <div className="row"><div className="label">Name of the Sponsor</div><div className="fill">{contract.sponsorName}</div></div>
+                <div className="row"><div className="label">Civil ID No.</div><div className="fill">{contract.sponsorCivilId}</div></div>
+                <div className="row"><div className="label">Name of the Female Worker</div><div className="fill">{contract.workerName}</div></div>
+                <div className="row"><div className="label">Passport No.</div><div className="fill">{contract.workerPassportNo}</div></div>
+                <div className="row"><div className="label">Date of Receipt</div><div className="fill">{formatDate(contract.dateOfReceipt)}</div></div>
+                <div className="row"><div className="label">Expiry of Contract</div><div className="fill">{formatDate(contract.expiryDate)}</div></div>
+                <div className="row"><div className="label">Time</div><div className="fill">{contract.timeOfReceipt}</div></div>
+                <div className="row"><div className="label">Tel Number</div><div className="fill">{contract.phoneNumber}</div></div>
+                <div className="row"><div className="label">Agreed Amount (KWD)</div><div className="fill">{formatKwd(contract.agreedAmountKwd)}</div></div>
+                <div className="row"><div className="label">Salary (KWD)</div><div className="fill">{formatKwd(contract.salaryKwd)}</div></div>
+                <div className="row"><div className="label">Advance Payment (KWD)</div><div className="fill">{formatKwd(contract.advancePaymentKwd)}</div></div>
+                <div className="row"><div className="label">Balance Payment (KWD)</div><div className="fill">{formatKwd(contract.balancePaymentKwd)}</div></div>
+                <div className="row"><div className="label">Address</div><div className="fill">Area {contract.address?.area}, Block {contract.address?.block}, Street {contract.address?.street}, House {contract.address?.house}</div></div>
+              </div>
+            </div>
 
-							<Grid item xs={12} md={6}>
-								<Typography>اسم العاملة (Name of the Female worker): {contract.workerName}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>رقم الجواز (Passport No.): {contract.workerPassportNo}</Typography>
-							</Grid>
+            {/* Fixed terms bilingual */}
+            <div className="section-title">الشروط والأحكام / Terms & Conditions</div>
+            <div className="terms">
+              <div className="lang-en"><TermsEnglish /></div>
+              <div className="lang-ar"><TermsArabic /></div>
+            </div>
 
-							<Grid item xs={12} md={6}>
-								<Typography>تاريخ استلام العاملة (Date of Receipt): {formatDate(contract.dateOfReceipt)}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>تاريخ انتهاء العقد (Expiry of Contract): {formatDate(contract.expiryDate)}</Typography>
-							</Grid>
+            {/* Acknowledgment and signatures */}
+            <div className="section-title">التوقيعات / Signatures</div>
+            <div className="signatures">
+              <div className="lang-ar">
+                <div className="row"><div className="label">اسم الطرف الثاني</div><div className="fill">{contract.sponsorName}</div></div>
+                <div className="row"><div className="label">الرقم المدني</div><div className="fill">{contract.sponsorCivilId}</div></div>
+                <div className="sig-box"></div>
+                <div className="small muted">توقيع الطرف الثاني (الكفيل)</div>
+              </div>
+              <div className="lang-en">
+                <div className="row"><div className="label">Name of the Worker</div><div className="fill">{contract.workerName}</div></div>
+                <div className="row"><div className="label">Passport No.</div><div className="fill">{contract.workerPassportNo}</div></div>
+                <div className="sig-box"></div>
+                <div className="small muted">Signature of the worker</div>
+              </div>
+            </div>
 
-							<Grid item xs={12} md={6}>
-								<Typography>الوقت (Time): {contract.timeOfReceipt}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>هاتف (Tel Number): {contract.phoneNumber}</Typography>
-							</Grid>
-
-							<Grid item xs={12} md={6}>
-								<Typography>المبلغ المتفق عليه (KD): {formatKwd(contract.agreedAmountKwd)}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>الراتب (Salary KD): {formatKwd(contract.salaryKwd)}</Typography>
-							</Grid>
-
-							<Grid item xs={12} md={6}>
-								<Typography>الدفعة المقدمة (Advance Payment): {formatKwd(contract.advancePaymentKwd)}</Typography>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Typography>المتبقي (Balance Payment): {formatKwd(contract.balancePaymentKwd)}</Typography>
-							</Grid>
-
-							<Grid item xs={12}>
-								<Typography>
-									العنوان (Address): المنطقة {contract.address?.area}, قطعة {contract.address?.block}, الشارع {contract.address?.street}, المنزل {contract.address?.house}
-								</Typography>
-							</Grid>
-						</Grid>
-
-						<Divider sx={{ my: 2 }} />
-
-						{/* Fixed terms bilingual: side by side on desktop */}
-						<Grid container spacing={2}>
-							<Grid item xs={12} md={6}>
-								<TermsEnglish />
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<TermsArabic />
-							</Grid>
-						</Grid>
-
-						<Divider sx={{ my: 2 }} />
-
-						{/* Acknowledgment and signatures */}
-						<Box sx={{ mt: 1 }}>
-							<Typography sx={{ mb: 1 }}>أنا الموقع أدناه أوافق على جميع الشروط والأحكام أعلاه.</Typography>
-							<Typography sx={{ mb: 2 }}>I undersigned agree to all the terms and conditions above.</Typography>
-
-							<Grid container spacing={2}>
-								<Grid item xs={12} md={6}>
-									<Typography>اسم الطرف الثاني (Name of the Sponsor): {contract.sponsorName}</Typography>
-									<Typography>الرقم المدني (Civil ID No.): {contract.sponsorCivilId}</Typography>
-									<Box sx={{ borderTop: '1px solid #999', mt: 6 }} />
-									<Typography sx={{ mt: 1 }}>توقيع الطرف الثاني (Signature Party 2): ____________</Typography>
-								</Grid>
-								<Grid item xs={12} md={6}>
-									<Typography>اسم العاملة (Name of the worker): {contract.workerName}</Typography>
-									<Typography>رقم الجواز (Passport No.): {contract.workerPassportNo}</Typography>
-									<Box sx={{ borderTop: '1px solid #999', mt: 6 }} />
-									<Typography sx={{ mt: 1 }}>توقيع العاملة (Signature of the worker): ____________</Typography>
-								</Grid>
-							</Grid>
-						</Box>
-
-						{/* Linked visas snapshot */}
-						{(contract.linkedVisasSnapshot?.length || 0) > 0 && (
-							<Box sx={{ mt: 3 }}>
-								<Typography variant="h6" sx={{ mb: 1 }}>التأشيرات المرتبطة</Typography>
-								{contract.linkedVisasSnapshot?.map((v) => (
-									<Typography key={v.visaId} variant="body2">
-										- {v.name} | Visa #{v.visaNumber} | Passport {v.passportNumber} | {v.nationality}
-									</Typography>
-								))}
-							</Box>
-						)}
-					</div>
+            {(contract.linkedVisasSnapshot?.length || 0) > 0 && (
+              <div style={{ marginTop: '10mm' }}>
+                <div className="section-title">التأشيرات المرتبطة / Linked Visas</div>
+                {contract.linkedVisasSnapshot?.map((v) => (
+                  <div key={v.visaId} className="small">- {v.name} | Visa #{v.visaNumber} | Passport {v.passportNumber} | {v.nationality}</div>
+                ))}
+              </div>
+            )}
+          </div>
 				</CardContent>
 			</Card>
 		</Container>
