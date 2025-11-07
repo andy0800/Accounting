@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, HashRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 
@@ -14,7 +14,8 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-const RouterComponent = (process.env.REACT_APP_ROUTER_MODE === 'hash') ? HashRouter : BrowserRouter;
+// Force HashRouter to guarantee deep-link reloads on static hosting
+const RouterComponent = HashRouter;
 
 root.render(
   <React.StrictMode>
