@@ -140,37 +140,35 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Prevent infinite retry loops
-    if (originalRequest._retry) {
-      console.error('❌ Final Response Error:', error.response?.status, error.message);
-      return Promise.reject(error);
-    }
-    
-    // Mark request as retried
-    originalRequest._retry = true;
+    // Track retry count only; don't block after first retry
+    originalRequest._retryCount = (originalRequest._retryCount || 0);
     
     console.error('❌ Response Error:', error.response?.status, error.message);
     
     // Enhanced error handling with retry logic
     const shouldRetry = (
-      !originalRequest._retryCount || originalRequest._retryCount < 5
+      originalRequest._retryCount < 5
     ) && (
       error.code === 'ECONNABORTED' || // Timeout
       error.code === 'ENOTFOUND' || // DNS resolution failed
       error.code === 'ECONNRESET' || // Connection reset
       error.code === 'ETIMEDOUT' || // Connection timeout
-      (error.response && error.response.status >= 500) || // Server errors
+      (error.response && error.response.status >= 500) || // Server errors (e.g., 503)
       !error.response // Network errors
     );
 
     if (shouldRetry) {
-      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      originalRequest._retryCount = originalRequest._retryCount + 1;
       const delay = Math.min(Math.pow(2, originalRequest._retryCount) * 1000, 30000);
       
       console.log(`🔄 Auto-retry ${originalRequest._retryCount}/5 after ${delay}ms...`);
       
-      // Show specific messages for different error types
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      // Show specific messages for different error types and try to wake backend
+      if (
+        error.code === 'ECONNABORTED' ||
+        error.message.includes('timeout') ||
+        (error.response && [502,503,504].includes(error.response.status))
+      ) {
         console.log('❄️ Backend cold start detected - waiting for warmup...');
         
         // Try to wake up backend on first timeout
@@ -184,6 +182,19 @@ apiClient.interceptors.response.use(
       
       // Retry with increased timeout
       originalRequest.timeout = Math.min((originalRequest.timeout || 90000) * 1.5, 180000);
+
+      // If running locally and remote backend is failing, attempt a local fallback for this request
+      try {
+        if (typeof window !== 'undefined') {
+          const isLocalhost = window.location.hostname.includes('localhost');
+          const usingRemote = (originalRequest.baseURL || API_URL).includes('onrender.com');
+          if (isLocalhost && usingRemote && (error.response && [502,503,504].includes(error.response.status))) {
+            const localUrl = `http://localhost:5000`;
+            console.log(`🔁 Fallback to local backend for this request: ${localUrl}`);
+            originalRequest.baseURL = localUrl;
+          }
+        }
+      } catch (_) {}
       
       return apiClient(originalRequest);
     }
