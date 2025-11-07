@@ -253,7 +253,7 @@ function App() {
     '/renting/contracts', '/renting/contracts/new'
   ]);
 
-  const protect = (element: JSX.Element, path: string) => {
+  const protect = (element: React.ReactElement, path: string) => {
     if (!isLogged) return <Navigate to="/login" state={{ from: location }} replace />;
     if (role === 'admin') return element;
     if (role === 'secretary') {
