@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Grid,
@@ -91,12 +92,9 @@ const RentingSecretaries: React.FC = () => {
   const fetchSecretaries = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/renting-secretaries');
-      if (!response.ok) {
-        throw new Error('فشل في جلب بيانات السكرتارية');
-      }
-      const data = await response.json();
-      setSecretaries(data.secretaries || data);
+      const response = await apiClient.get('/api/renting-secretaries');
+      const data = Array.isArray(response.data) ? response.data : (response.data?.secretaries || []);
+      setSecretaries(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
     } finally {
@@ -119,15 +117,7 @@ const RentingSecretaries: React.FC = () => {
         formDataToSend.append('documents', file);
       });
 
-      const response = await fetch('/api/renting-secretaries', {
-        method: 'POST',
-        body: formDataToSend
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إضافة السكرتير');
-      }
+      await apiClient.post('/api/renting-secretaries', formDataToSend);
 
       setShowAddDialog(false);
       resetForm();
@@ -154,15 +144,7 @@ const RentingSecretaries: React.FC = () => {
         formDataToSend.append('documents', file);
       });
 
-      const response = await fetch(`/api/renting-secretaries/${selectedSecretary._id}`, {
-        method: 'PUT',
-        body: formDataToSend
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في تحديث بيانات السكرتير');
-      }
+      await apiClient.put(`/api/renting-secretaries/${selectedSecretary._id}`, formDataToSend);
 
       setShowEditDialog(false);
       resetForm();
@@ -176,13 +158,7 @@ const RentingSecretaries: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من حذف هذا السكرتير؟')) return;
 
     try {
-      const response = await fetch(`/api/renting-secretaries/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error('فشل في حذف السكرتير');
-      }
+      await apiClient.delete(`/api/renting-secretaries/${id}`);
 
       fetchSecretaries();
     } catch (err) {
@@ -235,8 +211,9 @@ const RentingSecretaries: React.FC = () => {
   };
 
   const downloadDocument = (filePath: string, fileName: string) => {
+    const base = (apiClient.defaults.baseURL || '').replace(/\/$/, '');
     const link = document.createElement('a');
-    link.href = `/uploads/secretaries/${filePath}`;
+    link.href = `${base}/uploads/secretaries/${filePath}`;
     link.download = fileName;
     link.click();
   };

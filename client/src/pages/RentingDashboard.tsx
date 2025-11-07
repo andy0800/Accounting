@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Grid,
@@ -85,12 +86,8 @@ const RentingDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/renting-reports/dashboard');
-      if (!response.ok) {
-        throw new Error('فشل في جلب بيانات لوحة المعلومات');
-      }
-      const data = await response.json();
-      setDashboardData(data);
+      const response = await apiClient.get('/api/renting-reports/dashboard');
+      setDashboardData(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
     } finally {

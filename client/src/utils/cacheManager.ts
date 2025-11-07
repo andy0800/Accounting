@@ -187,16 +187,11 @@ class CacheManager {
    */
   public async clearBackendCache(): Promise<void> {
     try {
-      const response = await fetch('/api/accounts/clear-cache', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('🧹 Backend cache cleared:', result.message);
+      const module = await import('../config/axios');
+      const apiClient = module.default;
+      const response = await apiClient.post('/api/accounts/clear-cache', {});
+      if (response.status === 200) {
+        console.log('🧹 Backend cache cleared:', response.data?.message || 'done');
       } else {
         console.warn('⚠️ Failed to clear backend cache:', response.statusText);
       }

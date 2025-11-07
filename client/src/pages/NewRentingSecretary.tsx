@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Card,
@@ -59,24 +60,13 @@ const NewRentingSecretary: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/renting-secretaries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          email: form.email || undefined,
-          address: form.address || undefined,
-          notes: form.notes || undefined
-        }),
+      await apiClient.post('/api/renting-secretaries', {
+        name: form.name,
+        phone: form.phone,
+        email: form.email || undefined,
+        address: form.address || undefined,
+        notes: form.notes || undefined
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إضافة السكرتير');
-      }
 
       setSuccess(true);
       setTimeout(() => {

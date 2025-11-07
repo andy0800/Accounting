@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Typography,
@@ -68,12 +69,8 @@ const RentalPayments: React.FC = () => {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/rental-payments');
-      if (!response.ok) {
-        throw new Error('فشل في جلب المدفوعات');
-      }
-      const data = await response.json();
-      setPayments(data);
+      const response = await apiClient.get('/api/rental-payments');
+      setPayments(Array.isArray(response.data) ? response.data : (response.data?.payments || []));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
     } finally {
@@ -118,9 +115,9 @@ const RentalPayments: React.FC = () => {
 
   const downloadReceipt = async (paymentId: string, receiptPath: string) => {
     try {
-      const response = await fetch(`/api/rental-payments/${paymentId}/receipt`);
-      if (response.ok) {
-        const blob = await response.blob();
+      const response = await apiClient.get(`/api/rental-payments/${paymentId}/receipt`, { responseType: 'blob' });
+      if (response.status === 200) {
+        const blob = new Blob([response.data]);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -146,14 +143,7 @@ const RentalPayments: React.FC = () => {
           const formData = new FormData();
           formData.append('receipt', target.files[0]);
           
-          const response = await fetch(`/api/rental-payments/${paymentId}/receipt`, {
-            method: 'POST',
-            body: formData
-          });
-          
-          if (!response.ok) {
-            throw new Error('فشل في رفع الإيصال');
-          }
+          await apiClient.post(`/api/rental-payments/${paymentId}/receipt`, formData);
           
           // Refresh payments to show the new receipt
           fetchPayments();

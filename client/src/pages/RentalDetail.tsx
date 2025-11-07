@@ -59,6 +59,7 @@ import {
   Close as CloseIcon,
   CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
+import apiClient from '../config/axios';
 
 interface Secretary {
   _id: string;
@@ -237,15 +238,7 @@ const RentalDetail: React.FC = () => {
         formData.append('receiptDocument', paymentForm.receiptFile);
       }
 
-      const response = await fetch('/api/rental-payments', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إضافة الدفعة');
-      }
+      await apiClient.post('/api/rental-payments', formData);
 
       setShowPaymentDialog(false);
       setPaymentForm({
@@ -634,11 +627,14 @@ const RentalDetail: React.FC = () => {
                         primary={`${formatCurrency(payment.amount)} - ${payment.description}`}
                         secondary={`${formatDate(payment.paymentDate)} - ${payment.paymentMethod}`}
                       />
-                      {payment.receiptDocument && (
+                        {payment.receiptDocument && (
                         <Tooltip title="تحميل الإيصال">
                           <IconButton 
                             size="small"
-                            onClick={() => window.open(`/api/rental-payments/${payment._id}/receipt`, '_blank')}
+                            onClick={() => {
+                              const base = (apiClient.defaults.baseURL || '').replace(/\/$/, '');
+                              window.open(`${base}/api/rental-payments/${payment._id}/receipt`, '_blank');
+                            }}
                             disabled={loading}
                           >
                             <DownloadIcon />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -130,19 +131,14 @@ const RentalUnits: React.FC = () => {
       setLoading(true);
       
       // Fetch rental units
-      const unitsResponse = await fetch('/api/rental-units');
-      if (!unitsResponse.ok) {
-        throw new Error('فشل في جلب الوحدات');
-      }
-      const unitsData = await unitsResponse.json();
+      const unitsResponse = await apiClient.get('/api/rental-units');
+      const unitsData = Array.isArray(unitsResponse.data) ? { units: unitsResponse.data } : (unitsResponse.data || {});
       setUnits(unitsData.units || []);
 
       // Fetch secretaries
-      const secretariesResponse = await fetch('/api/renting-secretaries');
-      if (secretariesResponse.ok) {
-        const secretariesData = await secretariesResponse.json();
-        setSecretaries(secretariesData.secretaries || []);
-      }
+      const secretariesResponse = await apiClient.get('/api/renting-secretaries');
+      const secretariesData = Array.isArray(secretariesResponse.data) ? { secretaries: secretariesResponse.data } : (secretariesResponse.data || {});
+      setSecretaries(secretariesData.secretaries || []);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
@@ -153,23 +149,12 @@ const RentalUnits: React.FC = () => {
 
   const handleAddUnit = async () => {
     try {
-      const response = await fetch('/api/rental-units', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          rentAmount: parseFloat(formData.rentAmount),
-          dueDay: parseInt(formData.dueDay),
-          status: 'متاح'
-        }),
+      await apiClient.post('/api/rental-units', {
+        ...formData,
+        rentAmount: parseFloat(formData.rentAmount),
+        dueDay: parseInt(formData.dueDay),
+        status: 'متاح'
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إضافة الوحدة');
-      }
 
       setShowAddDialog(false);
       setFormData({
@@ -191,22 +176,11 @@ const RentalUnits: React.FC = () => {
     if (!selectedUnit) return;
 
     try {
-      const response = await fetch(`/api/rental-units/${selectedUnit._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          rentAmount: parseFloat(formData.rentAmount),
-          dueDay: parseInt(formData.dueDay)
-        }),
+      await apiClient.put(`/api/rental-units/${selectedUnit._id}`, {
+        ...formData,
+        rentAmount: parseFloat(formData.rentAmount),
+        dueDay: parseInt(formData.dueDay)
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في تحديث الوحدة');
-      }
 
       setShowEditDialog(false);
       setSelectedUnit(null);
@@ -229,24 +203,13 @@ const RentalUnits: React.FC = () => {
     if (!selectedUnit) return;
 
     try {
-      const response = await fetch('/api/rental-contracts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          unitId: selectedUnit._id,
-          secretaryId: assignForm.secretaryId,
-          monthlyRent: parseFloat(assignForm.monthlyRent),
-          startDate: assignForm.startDate,
-          dueDay: parseInt(assignForm.dueDay)
-        }),
+      await apiClient.post('/api/rental-contracts', {
+        unitId: selectedUnit._id,
+        secretaryId: assignForm.secretaryId,
+        monthlyRent: parseFloat(assignForm.monthlyRent),
+        startDate: assignForm.startDate,
+        dueDay: parseInt(assignForm.dueDay)
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في تعيين الوحدة');
-      }
 
       setShowAssignDialog(false);
       setSelectedUnit(null);
@@ -266,14 +229,7 @@ const RentalUnits: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
 
     try {
-      const response = await fetch(`/api/rental-units/${unitId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في حذف الوحدة');
-      }
+      await apiClient.delete(`/api/rental-units/${unitId}`);
 
       fetchData(); // Refresh data
     } catch (err) {

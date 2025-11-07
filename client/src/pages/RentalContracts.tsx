@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Button,
@@ -140,10 +141,9 @@ const RentalContracts: React.FC = () => {
   const fetchContracts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/rental-contracts');
-      if (!response.ok) throw new Error('Failed to fetch contracts');
-      const data = await response.json();
-      setContracts(data.contracts || []);
+      const response = await apiClient.get('/api/rental-contracts');
+      const payload = Array.isArray(response.data) ? { contracts: response.data } : (response.data || {});
+      setContracts(payload.contracts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch contracts');
     } finally {
@@ -153,9 +153,8 @@ const RentalContracts: React.FC = () => {
 
   const fetchSecretaries = async () => {
     try {
-      const response = await fetch('/api/renting-secretaries');
-      if (!response.ok) throw new Error('Failed to fetch secretaries');
-      const data = await response.json();
+      const response = await apiClient.get('/api/renting-secretaries');
+      const data = Array.isArray(response.data) ? { secretaries: response.data } : (response.data || {});
       setSecretaries(data.secretaries || []);
     } catch (err) {
       console.error('Failed to fetch secretaries:', err);
@@ -181,15 +180,7 @@ const RentalContracts: React.FC = () => {
         formData.append('documents', file);
       });
 
-      const response = await fetch('/api/rental-contracts', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create contract');
-      }
+      await apiClient.post('/api/rental-contracts', formData);
 
       setSnackbar({
         open: true,
@@ -231,15 +222,7 @@ const RentalContracts: React.FC = () => {
         formData.append('documents', file);
       });
 
-      const response = await fetch(`/api/rental-contracts/${selectedContract._id}`, {
-        method: 'PUT',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update contract');
-      }
+      await apiClient.put(`/api/rental-contracts/${selectedContract._id}`, formData);
 
       setSnackbar({
         open: true,
@@ -266,14 +249,7 @@ const RentalContracts: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من حذف هذا العقد؟')) return;
 
     try {
-      const response = await fetch(`/api/rental-contracts/${contractId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete contract');
-      }
+      await apiClient.delete(`/api/rental-contracts/${contractId}`);
 
       setSnackbar({
         open: true,
@@ -530,7 +506,7 @@ const RentalContracts: React.FC = () => {
                       <Tooltip title="عرض التفاصيل">
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/rental-detail/${contract._id}`)}
+                          onClick={() => navigate(`/renting/contracts/${contract._id}`)}
                         >
                           <ViewIcon />
                         </IconButton>

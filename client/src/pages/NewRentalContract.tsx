@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../config/axios';
 import {
   Box,
   Card,
@@ -93,18 +94,14 @@ const NewRentalContract: React.FC = () => {
       setLoadingData(true);
       
       // Fetch secretaries
-      const secretariesResponse = await fetch('/api/renting-secretaries');
-      if (secretariesResponse.ok) {
-        const secretariesData = await secretariesResponse.json();
-        setSecretaries(secretariesData.secretaries || []);
-      }
+      const secretariesResponse = await apiClient.get('/api/renting-secretaries');
+      const secretariesData = Array.isArray(secretariesResponse.data) ? { secretaries: secretariesResponse.data } : (secretariesResponse.data || {});
+      setSecretaries(secretariesData.secretaries || []);
 
       // Fetch rental units
-      const unitsResponse = await fetch('/api/rental-units');
-      if (unitsResponse.ok) {
-        const unitsData = await unitsResponse.json();
-        setUnits(unitsData.units || []);
-      }
+      const unitsResponse = await apiClient.get('/api/rental-units');
+      const unitsData = Array.isArray(unitsResponse.data) ? { units: unitsResponse.data } : (unitsResponse.data || {});
+      setUnits(unitsData.units || []);
     } catch (err) {
       console.error('Error fetching initial data:', err);
       setError('فشل في تحميل البيانات الأولية');
@@ -179,15 +176,7 @@ const NewRentalContract: React.FC = () => {
         submitData.append(`documents`, doc);
       });
 
-      const response = await fetch('/api/rental-contracts', {
-        method: 'POST',
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في إنشاء عقد الإيجار');
-      }
+      await apiClient.post('/api/rental-contracts', submitData);
 
       setSuccess('تم إنشاء عقد الإيجار بنجاح');
       setTimeout(() => {
