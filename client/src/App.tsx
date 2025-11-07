@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { backendPreloader } from './utils/backendPreloader';
 import { cacheManager } from './utils/cacheManager';
+import { auth } from './utils/auth';
 
 // Lazy load all components for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -36,7 +37,6 @@ const RentalPayments = React.lazy(() => import('./pages/RentalPayments'));
 const RentingReports = React.lazy(() => import('./pages/RentingReports'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Users = React.lazy(() => import('./pages/Users'));
-import { auth } from './utils/auth';
 
 
 // Create rtl cache
