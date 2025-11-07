@@ -41,6 +41,8 @@ const Navigation: React.FC = () => {
     { text: 'التأشيرات', icon: <VisaIcon />, path: '/visas', section: 'visa' },
     { text: 'الحسابات', icon: <AccountIcon />, path: '/accounts', section: 'visa' },
     { text: 'تأشيرة جديدة', icon: <AddIcon />, path: '/visas/new', section: 'visa' },
+    { text: 'عقود التجربة', icon: <Description />, path: '/trial-contracts', section: 'visa' },
+    { text: 'عقد تجربة جديد', icon: <AddIcon />, path: '/trial-contracts/new', section: 'visa' },
   ];
 
   const rentingMenuItems = [

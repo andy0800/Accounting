@@ -19,6 +19,10 @@ const Visas = React.lazy(() => import('./pages/Visas'));
 const VisaDetail = React.lazy(() => import('./pages/VisaDetail'));
 const NewVisa = React.lazy(() => import('./pages/NewVisa'));
 const Accounts = React.lazy(() => import('./pages/Accounts'));
+// Trial Contracts
+const TrialContracts = React.lazy(() => import('./pages/TrialContracts'));
+const NewTrialContract = React.lazy(() => import('./pages/NewTrialContract'));
+const TrialContractDetail = React.lazy(() => import('./pages/TrialContractDetail'));
 const RentingDashboard = React.lazy(() => import('./pages/RentingDashboard'));
 const RentingSecretaries = React.lazy(() => import('./pages/RentingSecretaries'));
 const RentalUnits = React.lazy(() => import('./pages/RentalUnits'));
@@ -254,6 +258,10 @@ function App() {
                     <Route path="/visas/:id" element={<VisaDetail />} />
                     <Route path="/visas/new" element={<NewVisa />} />
                     <Route path="/accounts" element={<Accounts />} />
+                    {/* Trial Contracts (Visa Handover) */}
+                    <Route path="/trial-contracts" element={<TrialContracts />} />
+                    <Route path="/trial-contracts/new" element={<NewTrialContract />} />
+                    <Route path="/trial-contracts/:id" element={<TrialContractDetail />} />
                     
                     {/* Renting System Routes */}
                     <Route path="/renting" element={<RentingDashboard />} />
