@@ -46,6 +46,14 @@ const trialContractSchema = new mongoose.Schema({
 	linkedVisaIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Visa' }],
 	linkedVisasSnapshot: [linkedVisaSnapshotSchema],
 
+	// Secretary linkage (Visa system secretary)
+	secretary: { type: mongoose.Schema.Types.ObjectId, ref: 'Secretary' },
+	secretarySnapshot: {
+		name: { type: String },
+		code: { type: String },
+		phone: { type: String }
+	},
+
 	// Status & numbering
 	status: { type: String, enum: ['draft', 'finalized'], default: 'draft' },
 	contractNumber: { type: String, unique: true, sparse: true }, // set on finalize

@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const TrialContract = require('../models/TrialContract');
 const Visa = require('../models/Visa');
+const Secretary = require('../models/Secretary');
 
 const isValidAgreedAmount = (v) => v === 575 || v === 750;
 
@@ -99,10 +100,18 @@ router.post('/', async (req, res) => {
 			return res.status(400).json({ message: 'المبلغ المتفق عليه يجب أن يكون 575 أو 750' });
 		}
 
-		// Validate linked visas are sold
+    // Validate linked visas are sold
 		const snapshot = await validateLinkedSoldVisas(body.linkedVisaIds || []);
 
-		const contract = new TrialContract({
+    // Secretary snapshot if provided
+    let secretarySnapshot;
+    if (body.secretaryId) {
+      const sec = await Secretary.findById(body.secretaryId).select('name code phone');
+      if (!sec) return res.status(400).json({ message: 'السكرتير غير موجود' });
+      secretarySnapshot = { name: sec.name, code: sec.code, phone: sec.phone };
+    }
+
+    const contract = new TrialContract({
 			sponsorName: body.sponsorName,
 			sponsorCivilId: body.sponsorCivilId,
 			workerName: body.workerName,
@@ -121,8 +130,10 @@ router.post('/', async (req, res) => {
 				house: body.address?.house,
 			},
 			sponsorshipDurationMonths: body.sponsorshipDurationMonths ? Number(body.sponsorshipDurationMonths) : undefined,
-			linkedVisaIds: (body.linkedVisaIds || []).filter(Boolean),
-			linkedVisasSnapshot: snapshot,
+      linkedVisaIds: (body.linkedVisaIds || []).filter(Boolean),
+      linkedVisasSnapshot: snapshot,
+      secretary: body.secretaryId || undefined,
+      secretarySnapshot: secretarySnapshot,
 			status: 'draft'
 		});
 
@@ -145,13 +156,26 @@ router.put('/:id', async (req, res) => {
 			return res.status(400).json({ message: 'المبلغ المتفق عليه يجب أن يكون 575 أو 750' });
 		}
 
-		// If linked visas provided, validate and refresh snapshot
+    // If linked visas provided, validate and refresh snapshot
 		let snapshot = contract.linkedVisasSnapshot || [];
 		if (Array.isArray(body.linkedVisaIds)) {
 			snapshot = await validateLinkedSoldVisas(body.linkedVisaIds);
 			contract.linkedVisaIds = body.linkedVisaIds.filter(Boolean);
 			contract.linkedVisasSnapshot = snapshot;
 		}
+
+    // Secretary assignment/update
+    if (body.secretaryId !== undefined) {
+      if (!body.secretaryId) {
+        contract.secretary = undefined;
+        contract.secretarySnapshot = undefined;
+      } else {
+        const sec = await Secretary.findById(body.secretaryId).select('name code phone');
+        if (!sec) return res.status(400).json({ message: 'السكرتير غير موجود' });
+        contract.secretary = body.secretaryId;
+        contract.secretarySnapshot = { name: sec.name, code: sec.code, phone: sec.phone };
+      }
+    }
 
 		// Update fields if provided
 		const fields = [
@@ -199,9 +223,15 @@ router.patch('/:id/finalize', async (req, res) => {
 		});
 		if (!hasAll) return res.status(400).json({ message: 'بعض الحقول الإلزامية مفقودة قبل الإنهاء' });
 
-		// Refresh snapshot to ensure integrity
+    // Refresh snapshots to ensure integrity
 		const snapshot = await validateLinkedSoldVisas(contract.linkedVisaIds || []);
 		contract.linkedVisasSnapshot = snapshot;
+    if (contract.secretary) {
+      const sec = await Secretary.findById(contract.secretary).select('name code phone');
+      if (sec) {
+        contract.secretarySnapshot = { name: sec.name, code: sec.code, phone: sec.phone };
+      }
+    }
 
 		// Generate sequential contract number per year: TC-YYYY-####
 		const now = new Date();

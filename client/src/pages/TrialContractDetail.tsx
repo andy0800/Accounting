@@ -21,6 +21,8 @@ interface TrialContract {
 	referenceNumber?: string;
 	status: 'draft' | 'finalized';
 	createdAt?: string;
+	secretary?: string;
+	secretarySnapshot?: { name?: string; code?: string; phone?: string };
 	sponsorName: string;
 	sponsorCivilId: string;
 	workerName: string;
@@ -202,6 +204,8 @@ const TrialContractDetail: React.FC = () => {
             <div className="bilingual-grid">
               <div className="lang-box lang-ar">
                 <div className="section-title">البيانات</div>
+                <div className="row"><div className="label">اسم السكرتير/السكرتيرة</div><div className="fill">{contract.secretarySnapshot?.name || '—'}{contract.secretarySnapshot?.code ? ` (${contract.secretarySnapshot.code})` : ''}</div></div>
+                {contract.secretarySnapshot?.phone && (<div className="row"><div className="label">هاتف السكرتير</div><div className="fill">{contract.secretarySnapshot.phone}</div></div>)}
                 <div className="row"><div className="label">اسم الطرف الثاني</div><div className="fill">{contract.sponsorName}</div></div>
                 <div className="row"><div className="label">الرقم المدني</div><div className="fill">{contract.sponsorCivilId}</div></div>
                 <div className="row"><div className="label">اسم العاملة</div><div className="fill">{contract.workerName}</div></div>
@@ -218,6 +222,8 @@ const TrialContractDetail: React.FC = () => {
               </div>
               <div className="lang-box lang-en">
                 <div className="section-title">Details</div>
+                <div className="row"><div className="label">Secretary Name</div><div className="fill">{contract.secretarySnapshot?.name || '—'}{contract.secretarySnapshot?.code ? ` (${contract.secretarySnapshot.code})` : ''}</div></div>
+                {contract.secretarySnapshot?.phone && (<div className="row"><div className="label">Secretary Phone</div><div className="fill">{contract.secretarySnapshot.phone}</div></div>)}
                 <div className="row"><div className="label">Name of the Sponsor</div><div className="fill">{contract.sponsorName}</div></div>
                 <div className="row"><div className="label">Civil ID No.</div><div className="fill">{contract.sponsorCivilId}</div></div>
                 <div className="row"><div className="label">Name of the Female Worker</div><div className="fill">{contract.workerName}</div></div>

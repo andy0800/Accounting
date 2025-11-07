@@ -28,14 +28,23 @@ interface SoldVisaOption {
 	nationality: string;
 }
 
+interface SecretaryOption {
+  _id: string;
+  name: string;
+  code?: string;
+  phone?: string;
+}
+
 const NewTrialContract: React.FC = () => {
 	const navigate = useNavigate();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
-	const [soldVisas, setSoldVisas] = useState<SoldVisaOption[]>([]);
+  const [soldVisas, setSoldVisas] = useState<SoldVisaOption[]>([]);
+  const [secretaries, setSecretaries] = useState<SecretaryOption[]>([]);
 
-	const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<any>({
+    secretaryId: '',
 		sponsorName: '',
 		sponsorCivilId: '',
 		workerName: '',
@@ -68,7 +77,17 @@ const NewTrialContract: React.FC = () => {
 				console.warn('تعذر تحميل التأشيرات المباعة', e);
 			}
 		};
-		loadSoldVisas();
+    const loadSecretaries = async () => {
+      try {
+        const resp = await apiClient.get('/api/secretaries');
+        const list = Array.isArray(resp.data) ? resp.data : (resp.data?.secretaries || []);
+        setSecretaries(list.map((s: any) => ({ _id: s._id, name: s.name, code: s.code, phone: s.phone })));
+      } catch (e) {
+        console.warn('تعذر تحميل السكرتارية', e);
+      }
+    };
+    loadSoldVisas();
+    loadSecretaries();
 	}, []);
 
 	const handleChange = (field: string, value: any) => {
@@ -89,7 +108,8 @@ const NewTrialContract: React.FC = () => {
 				agreedAmountKwd: Number(form.agreedAmountKwd),
 				salaryKwd: Number(form.salaryKwd),
 				advancePaymentKwd: Number(form.advancePaymentKwd || 0),
-				linkedVisaIds: form.linkedVisaIds,
+        linkedVisaIds: form.linkedVisaIds,
+        secretaryId: form.secretaryId || undefined,
 			};
 			const resp = await apiClient.post('/api/trial-contracts', payload);
 			const id = resp.data?.contract?._id;
@@ -146,6 +166,30 @@ const NewTrialContract: React.FC = () => {
 							<Grid item xs={12} md={6}>
 								<TextField label="رقم الهاتف" fullWidth required value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} />
 							</Grid>
+
+                          {/* Secretary Selection */}
+                          <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                              <InputLabel>اسم السكرتير</InputLabel>
+                              <Select
+                                value={form.secretaryId}
+                                onChange={(e) => handleChange('secretaryId', e.target.value)}
+                                label="اسم السكرتير"
+                              >
+                                <MenuItem value=""><em>لا يوجد</em></MenuItem>
+                                {secretaries.map((s) => (
+                                  <MenuItem key={s._id} value={s._id}>
+                                    <Box>
+                                      <Typography variant="body1">{s.name} {s.code ? `(${s.code})` : ''}</Typography>
+                                      {s.phone && (
+                                        <Typography variant="caption" color="text.secondary">{s.phone}</Typography>
+                                      )}
+                                    </Box>
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Grid>
 
 							{/* Financials */}
 							<Grid item xs={12} md={4}>
