@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 
@@ -14,12 +14,14 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
+const RouterComponent = (process.env.REACT_APP_ROUTER_MODE === 'hash') ? HashRouter : BrowserRouter;
+
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <RouterComponent>
       <CssBaseline />
       <App />
-    </BrowserRouter>
+    </RouterComponent>
   </React.StrictMode>
 );
 
