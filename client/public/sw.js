@@ -93,10 +93,13 @@ self.addEventListener('fetch', (event) => {
 // API request handler - network-first with cache fallback
 async function handleApiRequest(request) {
   const cache = await caches.open(API_CACHE);
-  const cachedResponse = await cache.match(request);
+  // Only cache GET requests
+  const isGet = request.method === 'GET';
+  const cacheKey = isGet ? request : undefined;
+  const cachedResponse = isGet && cacheKey ? await cache.match(cacheKey) : undefined;
 
   // Return cached response if available and not expired
-  if (cachedResponse) {
+  if (isGet && cachedResponse) {
     const cacheTime = cachedResponse.headers.get('sw-cache-time');
     if (cacheTime && Date.now() - parseInt(cacheTime) < 5 * 60 * 1000) { // 5 minutes
       console.log('📦 Serving API from cache:', request.url);
@@ -107,19 +110,19 @@ async function handleApiRequest(request) {
   try {
     // Fetch from network
     const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      // Cache successful responses
+
+    // Cache only GET successful responses
+    if (isGet && networkResponse.ok) {
       await cache.put(request, networkResponse.clone());
       console.log('💾 Cached API response:', request.url);
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('🌐 Network error, serving from cache:', error);
     
-    // Return cached response as fallback
-    if (cachedResponse) {
+    // Return cached response as fallback (GET only)
+    if (isGet && cachedResponse) {
       return cachedResponse;
     }
     
