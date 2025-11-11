@@ -19,6 +19,7 @@ import {
 import { Add as AddIcon, Save as SaveIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../config/axios';
+import { auth } from '../utils/auth';
 
 interface SoldVisaOption {
 	_id: string;
@@ -28,23 +29,14 @@ interface SoldVisaOption {
 	nationality: string;
 }
 
-interface SecretaryOption {
-  _id: string;
-  name: string;
-  code?: string;
-  phone?: string;
-}
-
 const NewTrialContract: React.FC = () => {
 	const navigate = useNavigate();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
   const [soldVisas, setSoldVisas] = useState<SoldVisaOption[]>([]);
-  const [secretaries, setSecretaries] = useState<SecretaryOption[]>([]);
 
   const [form, setForm] = useState<any>({
-    secretaryId: '',
 		sponsorName: '',
 		sponsorCivilId: '',
 		workerName: '',
@@ -77,17 +69,7 @@ const NewTrialContract: React.FC = () => {
 				console.warn('تعذر تحميل التأشيرات المباعة', e);
 			}
 		};
-    const loadSecretaries = async () => {
-      try {
-        const resp = await apiClient.get('/api/secretaries');
-        const list = Array.isArray(resp.data) ? resp.data : (resp.data?.secretaries || []);
-        setSecretaries(list.map((s: any) => ({ _id: s._id, name: s.name, code: s.code, phone: s.phone })));
-      } catch (e) {
-        console.warn('تعذر تحميل السكرتارية', e);
-      }
-    };
     loadSoldVisas();
-    loadSecretaries();
 	}, []);
 
 	const handleChange = (field: string, value: any) => {
@@ -109,7 +91,7 @@ const NewTrialContract: React.FC = () => {
 				salaryKwd: Number(form.salaryKwd),
 				advancePaymentKwd: Number(form.advancePaymentKwd || 0),
         linkedVisaIds: form.linkedVisaIds,
-        secretaryId: form.secretaryId || undefined,
+        secretaryUsername: auth.getUsername() || undefined,
 			};
 			const resp = await apiClient.post('/api/trial-contracts', payload);
 			const id = resp.data?.contract?._id;
@@ -167,28 +149,14 @@ const NewTrialContract: React.FC = () => {
 								<TextField label="رقم الهاتف" fullWidth required value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} />
 							</Grid>
 
-                          {/* Secretary Selection */}
+                          {/* Secretary (auto from logged-in user) */}
                           <Grid item xs={12} md={6}>
-                            <FormControl fullWidth>
-                              <InputLabel>اسم السكرتير</InputLabel>
-                              <Select
-                                value={form.secretaryId}
-                                onChange={(e) => handleChange('secretaryId', e.target.value)}
-                                label="اسم السكرتير"
-                              >
-                                <MenuItem value=""><em>لا يوجد</em></MenuItem>
-                                {secretaries.map((s) => (
-                                  <MenuItem key={s._id} value={s._id}>
-                                    <Box>
-                                      <Typography variant="body1">{s.name} {s.code ? `(${s.code})` : ''}</Typography>
-                                      {s.phone && (
-                                        <Typography variant="caption" color="text.secondary">{s.phone}</Typography>
-                                      )}
-                                    </Box>
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <TextField
+                              fullWidth
+                              label="اسم السكرتير (من المستخدم الحالي)"
+                              value={auth.getUsername() || ''}
+                              InputProps={{ readOnly: true }}
+                            />
                           </Grid>
 
 							{/* Financials */}

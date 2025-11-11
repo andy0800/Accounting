@@ -109,6 +109,9 @@ router.post('/', async (req, res) => {
       const sec = await Secretary.findById(body.secretaryId).select('name code phone');
       if (!sec) return res.status(400).json({ message: 'السكرتير غير موجود' });
       secretarySnapshot = { name: sec.name, code: sec.code, phone: sec.phone };
+    } else if (body.secretaryUsername) {
+      // Fallback to currently logged-in username provided by the client
+      secretarySnapshot = { name: body.secretaryUsername };
     }
 
     const contract = new TrialContract({

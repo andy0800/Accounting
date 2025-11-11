@@ -217,7 +217,6 @@ const TrialContractDetail: React.FC = () => {
                 <div className="row"><div className="label">المبلغ المتفق عليه (د.ك)</div><div className="fill">{formatKwd(contract.agreedAmountKwd)}</div></div>
                 <div className="row"><div className="label">الراتب (د.ك)</div><div className="fill">{formatKwd(contract.salaryKwd)}</div></div>
                 <div className="row"><div className="label">الدفعة المقدمة</div><div className="fill">{formatKwd(contract.advancePaymentKwd)}</div></div>
-                <div className="row"><div className="label">الدفعة المتبقية</div><div className="fill">{formatKwd(contract.balancePaymentKwd)}</div></div>
                 <div className="row"><div className="label">العنوان</div><div className="fill">المنطقة {contract.address?.area}, قطعة {contract.address?.block}, الشارع {contract.address?.street}, المنزل {contract.address?.house}</div></div>
               </div>
               <div className="lang-box lang-en">
@@ -235,7 +234,6 @@ const TrialContractDetail: React.FC = () => {
                 <div className="row"><div className="label">Agreed Amount (KWD)</div><div className="fill">{formatKwd(contract.agreedAmountKwd)}</div></div>
                 <div className="row"><div className="label">Salary (KWD)</div><div className="fill">{formatKwd(contract.salaryKwd)}</div></div>
                 <div className="row"><div className="label">Advance Payment (KWD)</div><div className="fill">{formatKwd(contract.advancePaymentKwd)}</div></div>
-                <div className="row"><div className="label">Balance Payment (KWD)</div><div className="fill">{formatKwd(contract.balancePaymentKwd)}</div></div>
                 <div className="row"><div className="label">Address</div><div className="fill">Area {contract.address?.area}, Block {contract.address?.block}, Street {contract.address?.street}, House {contract.address?.house}</div></div>
               </div>
             </div>
