@@ -36,7 +36,7 @@ const corsOptions = {
     }
   },
   credentials: true, // Allow cookies and authorization headers
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
@@ -46,6 +46,8 @@ app.use(compression()); // Enable gzip compression
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Increase JSON payload limit
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Ensure preflight requests succeed for all routes
+app.options('*', cors(corsOptions));
 
 // Add response caching headers
 app.use((req, res, next) => {
@@ -53,9 +55,16 @@ app.use((req, res, next) => {
   if (req.url.startsWith('/uploads/')) {
     res.set('Cache-Control', 'public, max-age=3600');
   }
-  // Cache API responses for 5 minutes
-  else if (req.url.startsWith('/api/')) {
+  // Cache API GET responses (non-auth) for 5 minutes only
+  else if (
+    req.method === 'GET' &&
+    req.url.startsWith('/api/') &&
+    !req.url.startsWith('/api/auth')
+  ) {
     res.set('Cache-Control', 'public, max-age=300');
+  } else {
+    // Do not cache non-GET or auth endpoints
+    res.set('Cache-Control', 'no-store');
   }
   next();
 });

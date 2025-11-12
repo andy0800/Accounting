@@ -16,7 +16,9 @@ const apiClient = axios.create({
     // Progressive backoff: 2s, 4s, 8s, 16s, 32s
     return Math.min(Math.pow(2, retryCount + 1) * 1000, 30000);
   },
-  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
+  // Use default axios behaviour: resolve only for 2xx responses.
+  // This ensures 4xx (e.g., invalid credentials) reject and are handled in UI.
+  validateStatus: (status) => status >= 200 && status < 300,
 });
 
 // Simple in-memory cache for API responses
