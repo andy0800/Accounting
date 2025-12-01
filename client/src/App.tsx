@@ -26,15 +26,14 @@ const NewTrialContract = React.lazy(() => import('./pages/NewTrialContract'));
 const TrialContractDetail = React.lazy(() => import('./pages/TrialContractDetail'));
 const RentingDashboard = React.lazy(() => import('./pages/RentingDashboard'));
 const RentingSecretaries = React.lazy(() => import('./pages/RentingSecretaries'));
-const RentalUnits = React.lazy(() => import('./pages/RentalUnits'));
-const RentalContracts = React.lazy(() => import('./pages/RentalContracts'));
-const NewRentalUnit = React.lazy(() => import('./pages/NewRentalUnit'));
-const NewRentalContract = React.lazy(() => import('./pages/NewRentalContract'));
 const NewRentingSecretary = React.lazy(() => import('./pages/NewRentingSecretary'));
-const TerminatedRentals = React.lazy(() => import('./pages/TerminatedRentals'));
+const RentalUnits = React.lazy(() => import('./pages/RentalUnits'));
+const NewRentalUnit = React.lazy(() => import('./pages/NewRentalUnit'));
+const RentalContracts = React.lazy(() => import('./pages/RentalContracts'));
+const NewRentalContract = React.lazy(() => import('./pages/NewRentalContract'));
 const RentalDetail = React.lazy(() => import('./pages/RentalDetail'));
-const RentalPayments = React.lazy(() => import('./pages/RentalPayments'));
-const RentingReports = React.lazy(() => import('./pages/RentingReports'));
+const RentalManagement = React.lazy(() => import('./pages/RentalManagement'));
+const RentalAccounting = React.lazy(() => import('./pages/RentalAccounting'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Users = React.lazy(() => import('./pages/Users'));
 
@@ -257,18 +256,12 @@ function App() {
   const isLogged = auth.isLoggedIn();
   const role = auth.getRole();
 
-  // Allowed routes for secretary
-  const secretaryAllowed = new Set([
-    '/trial-contracts', '/trial-contracts/new',
-    '/renting/contracts', '/renting/contracts/new'
-  ]);
-
   const protect = (element: React.ReactElement, path: string) => {
     if (!isLogged) return <Navigate to="/login" state={{ from: location }} replace />;
     if (role === 'admin') return element;
     if (role === 'secretary') {
-      // allow trial and renting contract routes and their details
-      if (path.startsWith('/trial-contracts') || path.startsWith('/renting/contracts')) return element;
+      // allow trial contract routes and their details
+      if (path.startsWith('/trial-contracts')) return element;
       return <Navigate to="/trial-contracts" replace />;
     }
     return <Navigate to="/login" replace />;
@@ -297,8 +290,8 @@ function App() {
                     <Route path="/trial-contracts" element={protect(<TrialContracts />, '/trial-contracts')} />
                     <Route path="/trial-contracts/new" element={protect(<NewTrialContract />, '/trial-contracts/new')} />
                     <Route path="/trial-contracts/:id" element={protect(<TrialContractDetail />, '/trial-contracts/:id')} />
-                    
-                    {/* Renting System Routes */}
+
+                    {/* Renting system */}
                     <Route path="/renting" element={protect(<RentingDashboard />, '/renting')} />
                     <Route path="/renting/secretaries" element={protect(<RentingSecretaries />, '/renting/secretaries')} />
                     <Route path="/renting/secretaries/new" element={protect(<NewRentingSecretary />, '/renting/secretaries/new')} />
@@ -307,9 +300,8 @@ function App() {
                     <Route path="/renting/contracts" element={protect(<RentalContracts />, '/renting/contracts')} />
                     <Route path="/renting/contracts/new" element={protect(<NewRentalContract />, '/renting/contracts/new')} />
                     <Route path="/renting/contracts/:id" element={protect(<RentalDetail />, '/renting/contracts/:id')} />
-                    <Route path="/renting/payments/:id" element={protect(<RentalPayments />, '/renting/payments/:id')} />
-                    <Route path="/renting/terminated" element={protect(<TerminatedRentals />, '/renting/terminated')} />
-                    <Route path="/renting/reports" element={protect(<RentingReports />, '/renting/reports')} />
+                    <Route path="/renting/management" element={protect(<RentalManagement />, '/renting/management')} />
+                    <Route path="/renting/accounting" element={protect(<RentalAccounting />, '/renting/accounting')} />
 
                     {/* Users (admin only) */}
                     <Route path="/users" element={protect(<Users />, '/users')} />

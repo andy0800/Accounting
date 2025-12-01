@@ -4,61 +4,54 @@ const rentalPaymentSchema = new mongoose.Schema({
   contractId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'RentalContract',
-    required: [true, 'العقد مطلوب']
+    required: true,
   },
   monthYear: {
     type: String,
-    required: [true, 'الشهر والسنة مطلوبان'],
-    // Format: "2024-06" for June 2024
-    match: [/^\d{4}-\d{2}$/, 'تنسيق الشهر والسنة غير صحيح']
+    required: true, // YYYY-MM
   },
   amount: {
     type: Number,
-    required: [true, 'مبلغ الدفعة مطلوب'],
-    min: [0, 'مبلغ الدفعة يجب أن يكون موجب']
+    required: [true, 'مبلغ الدفع مطلوب'],
+    min: [0, 'مبلغ الدفع يجب أن يكون أكبر من صفر'],
   },
   paymentDate: {
     type: Date,
-    required: [true, 'تاريخ الدفع مطلوب'],
-    default: Date.now
+    default: Date.now,
   },
-  description: {
+  method: {
+    type: String,
+    enum: ['Cash', 'KNET/Link'],
+    required: true,
+  },
+  transactionRef: {
     type: String,
     trim: true,
-    default: 'دفعة إيجار'
   },
-  isPartial: {
-    type: Boolean,
-    default: false
+  notes: String,
+  enteredBy: {
+    type: String,
   },
   remainingBalance: {
     type: Number,
     default: 0,
-    min: [0, 'الرصيد المتبقي يجب أن يكون موجب']
   },
-  receiptDocument: {
-    name: String,
-    filePath: String,
-    uploadDate: {
-      type: Date,
-      default: Date.now
-    }
+  isPartial: {
+    type: Boolean,
+    default: false,
   },
-  paymentMethod: {
-    type: String,
-    enum: ['نقدي', 'تحويل بنكي', 'شيك', 'بطاقة ائتمان'],
-    default: 'نقدي'
-  },
-  notes: {
-    type: String,
-    trim: true
-  }
 }, {
-  timestamps: true
+  timestamps: true,
 });
 
-// Index for better search performance
-rentalPaymentSchema.index({ contractId: 1, monthYear: 1, paymentDate: 1 });
-rentalPaymentSchema.index({ monthYear: 1, isPartial: 1 });
+rentalPaymentSchema.index({ contractId: 1, monthYear: 1 });
+
+rentalPaymentSchema.pre('validate', function validateTransaction(next) {
+  if (this.method === 'KNET/Link' && !this.transactionRef) {
+    this.invalidate('transactionRef', 'رقم مرجع المعاملة مطلوب لمدفوعات KNET/Link');
+  }
+  next();
+});
 
 module.exports = mongoose.model('RentalPayment', rentalPaymentSchema);
+

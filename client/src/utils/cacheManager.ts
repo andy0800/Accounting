@@ -31,11 +31,18 @@ class CacheManager {
       const localStorageSize = this.getStorageSize(localStorage);
       const sessionStorageSize = this.getStorageSize(sessionStorage);
       
-      localStorage.clear();
+      // Preserve auth keys to avoid logging users out during maintenance
+      const preserveKeys = new Set(['auth_token', 'auth_role', 'auth_username']);
+      const keys = Object.keys(localStorage);
+      keys.forEach((key) => {
+        if (!preserveKeys.has(key)) {
+          localStorage.removeItem(key);
+        }
+      });
       sessionStorage.clear();
       
       console.log('🧹 Browser storage cleared:');
-      console.log(`   • localStorage: ${localStorageSize} items removed`);
+      console.log(`   • localStorage: ${Math.max(0, localStorageSize - preserveKeys.size)} items removed (auth preserved)`);
       console.log(`   • sessionStorage: ${sessionStorageSize} items removed`);
     } catch (error) {
       console.error('❌ Error clearing browser storage:', error);
@@ -314,7 +321,7 @@ class CacheManager {
       window.location.reload();
     } else {
       // Fallback for older browsers
-      window.location.href = window.location.href;
+      window.location.assign(window.location.href);
     }
   }
 

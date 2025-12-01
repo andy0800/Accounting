@@ -155,13 +155,13 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 // Trial contracts (visa handover/probation)
 app.use('/api/trial-contracts', require('./routes/trial-contracts'));
-
-// Renting System Routes
 app.use('/api/renting-secretaries', require('./routes/renting-secretaries'));
 app.use('/api/rental-units', require('./routes/rental-units'));
 app.use('/api/rental-contracts', require('./routes/rental-contracts'));
 app.use('/api/rental-payments', require('./routes/rental-payments'));
-app.use('/api/renting-reports', require('./routes/renting-reports'));
+app.use('/api/rental-management', require('./routes/rental-management'));
+app.use('/api/rental-accounting', require('./routes/rental-accounting'));
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

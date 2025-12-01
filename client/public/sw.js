@@ -98,15 +98,6 @@ async function handleApiRequest(request) {
   const cacheKey = isGet ? request : undefined;
   const cachedResponse = isGet && cacheKey ? await cache.match(cacheKey) : undefined;
 
-  // Return cached response if available and not expired
-  if (isGet && cachedResponse) {
-    const cacheTime = cachedResponse.headers.get('sw-cache-time');
-    if (cacheTime && Date.now() - parseInt(cacheTime) < 5 * 60 * 1000) { // 5 minutes
-      console.log('📦 Serving API from cache:', request.url);
-      return cachedResponse;
-    }
-  }
-
   try {
     // Fetch from network
     const networkResponse = await fetch(request);

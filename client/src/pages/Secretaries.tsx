@@ -23,9 +23,6 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,9 +32,6 @@ import {
   Person as PersonIcon,
   AttachMoney as MoneyIcon,
   Warning as WarningIcon,
-  Home as HomeIcon,
-  ExpandMore as ExpandMoreIcon,
-  Business as BusinessIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../config/axios';
@@ -56,21 +50,9 @@ interface Secretary {
   createdAt: string;
 }
 
-interface RentalUnit {
-  _id: string;
-  unitType: string;
-  unitNumber: string;
-  address: string;
-  rentAmount: number;
-  status: string;
-  startDate: string;
-  dueDay: number;
-}
-
 const Secretaries: React.FC = () => {
   const navigate = useNavigate();
   const [secretaries, setSecretaries] = useState<Secretary[]>([]);
-  const [rentalUnits, setRentalUnits] = useState<{ [secretaryId: string]: RentalUnit[] }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -89,44 +71,11 @@ const Secretaries: React.FC = () => {
     try {
       const response = await apiClient.get('/api/secretaries');
       setSecretaries(response.data);
-      
-      // Fetch rental information for each secretary
-      await fetchRentalInformation(response.data);
-      
       setLoading(false);
     } catch (error) {
       console.error('خطأ في جلب السكرتارية:', error);
       setError('خطأ في جلب قائمة السكرتارية');
       setLoading(false);
-    }
-  };
-
-  const fetchRentalInformation = async (secretariesList: Secretary[]) => {
-    try {
-      const rentalData: { [secretaryId: string]: RentalUnit[] } = {};
-      
-      // Parallelize API calls using Promise.all for better performance
-      const rentalPromises = secretariesList.map(async (secretary) => {
-        try {
-          const rentalResponse = await apiClient.get(`/api/rental-units/secretary/${secretary._id}`);
-          return { secretaryId: secretary._id, data: rentalResponse.data || [] };
-        } catch (err) {
-          console.error(`Error fetching rental data for secretary ${secretary._id}:`, err);
-          return { secretaryId: secretary._id, data: [] };
-        }
-      });
-      
-      // Wait for all rental data to be fetched in parallel
-      const rentalResults = await Promise.all(rentalPromises);
-      
-      // Process results
-      rentalResults.forEach(({ secretaryId, data }) => {
-        rentalData[secretaryId] = data;
-      });
-      
-      setRentalUnits(rentalData);
-    } catch (err) {
-      console.error('Error fetching rental information:', err);
     }
   };
 
@@ -179,32 +128,6 @@ const Secretaries: React.FC = () => {
     return 'default';
   };
 
-  const getUnitTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'محل':
-      case 'store':
-        return <BusinessIcon />;
-      case 'مكتب':
-      case 'office':
-        return <BusinessIcon />;
-      case 'شقة':
-      case 'apartment':
-        return <HomeIcon />;
-      default:
-        return <HomeIcon />;
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-KW', {
-      style: 'currency',
-      currency: 'KWD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA');
-  };
 
   if (loading) {
     return (
@@ -297,23 +220,6 @@ const Secretaries: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <HomeIcon color="primary" sx={{ mr: 2 }} />
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    الوحدات المؤجرة
-                  </Typography>
-                  <Typography variant="h4">
-                    {Object.values(rentalUnits).reduce((sum, units) => sum + units.length, 0)}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
       </Grid>
 
       {/* جدول السكرتارية */}
@@ -336,7 +242,6 @@ const Secretaries: React.FC = () => {
                   <TableCell>التأشيرات النشطة</TableCell>
                   <TableCell>التأشيرات المكتملة</TableCell>
                   <TableCell>التأشيرات الملغاة</TableCell>
-                  <TableCell>الوحدات المؤجرة</TableCell>
                   <TableCell>الحالة</TableCell>
                   <TableCell>الإجراءات</TableCell>
                 </TableRow>
@@ -388,14 +293,6 @@ const Secretaries: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={rentalUnits[secretary._id]?.length || 0} 
-                        color="info" 
-                        size="small"
-                        icon={<HomeIcon />}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
                         label={secretary.totalEarnings > secretary.totalDebt ? 'ربح' : 'خسارة'}
                         color={getStatusColor(secretary.totalEarnings, secretary.totalDebt) as any}
                         size="small"
@@ -437,94 +334,6 @@ const Secretaries: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* تفاصيل الوحدات المؤجرة */}
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            تفاصيل الوحدات المؤجرة
-          </Typography>
-          
-          {secretaries.map((secretary) => {
-            const secretaryRentalUnits = rentalUnits[secretary._id] || [];
-            if (secretaryRentalUnits.length === 0) return null;
-            
-            return (
-              <Accordion key={secretary._id} sx={{ mb: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <PersonIcon color="primary" />
-                    <Typography variant="h6">
-                      {secretary.name}
-                    </Typography>
-                    <Chip 
-                      label={`${secretaryRentalUnits.length} وحدة`} 
-                      color="info" 
-                      size="small"
-                    />
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>نوع الوحدة</TableCell>
-                          <TableCell>رقم الوحدة</TableCell>
-                          <TableCell>العنوان</TableCell>
-                          <TableCell>الإيجار الشهري</TableCell>
-                          <TableCell>تاريخ البدء</TableCell>
-                          <TableCell>يوم الاستحقاق</TableCell>
-                          <TableCell>الحالة</TableCell>
-                          <TableCell>الإجراءات</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {secretaryRentalUnits.map((unit) => (
-                          <TableRow key={unit._id}>
-                            <TableCell>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                {getUnitTypeIcon(unit.unitType)}
-                                {unit.unitType}
-                              </Box>
-                            </TableCell>
-                            <TableCell>{unit.unitNumber}</TableCell>
-                            <TableCell>{unit.address}</TableCell>
-                            <TableCell>
-                              <Typography color="primary.main" fontWeight="bold">
-                                {formatCurrency(unit.rentAmount)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>{formatDate(unit.startDate)}</TableCell>
-                            <TableCell>{unit.dueDay}</TableCell>
-                            <TableCell>
-                              <Chip 
-                                label={unit.status} 
-                                color={unit.status === 'نشط' ? 'success' : 'default'} 
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Tooltip title="عرض تفاصيل الوحدة">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => navigate(`/renting/units/${unit._id}`)}
-                                  color="primary"
-                                >
-                                  <ViewIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </AccordionDetails>
-              </Accordion>
-            );
-          })}
-        </CardContent>
-      </Card>
 
       {/* Dialog إضافة سكرتيرة */}
       <Dialog open={addDialog} onClose={() => setAddDialog(false)} maxWidth="sm" fullWidth>

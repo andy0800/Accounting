@@ -5,6 +5,23 @@ const TrialContract = require('../models/TrialContract');
 const Visa = require('../models/Visa');
 const Secretary = require('../models/Secretary');
 
+// Auth middleware
+function requireAuth(req, res, next) {
+  try {
+    const hdr = req.headers.authorization || '';
+    const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
+    if (!token) return res.status(401).json({ message: 'غير مصرح' });
+    const jwt = require('jsonwebtoken');
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+    return next();
+  } catch (e) {
+    return res.status(401).json({ message: 'جلسة غير صالحة' });
+  }
+}
+
+// Protect all trial-contracts routes
+router.use(requireAuth);
+
 const isValidAgreedAmount = (v) => v === 575 || v === 750;
 
 async function validateLinkedSoldVisas(visaIds) {

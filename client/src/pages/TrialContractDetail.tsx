@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
 	Box,
 	Button,
@@ -7,7 +7,6 @@ import {
 	CircularProgress,
 	Container,
 	Divider,
-	Grid,
 	Typography,
 	Alert
 } from '@mui/material';
@@ -51,7 +50,7 @@ const TrialContractDetail: React.FC = () => {
 	const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('ar-SA') : '';
 	const formatKwd = (n?: number) => new Intl.NumberFormat('ar-KW', { style: 'currency', currency: 'KWD' }).format(n || 0);
 
-	const load = async () => {
+	const load = React.useCallback(async () => {
 		try {
 			setLoading(true);
 			const resp = await apiClient.get(`/api/trial-contracts/${id}`);
@@ -61,9 +60,11 @@ const TrialContractDetail: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [id]);
 
-	useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+	useEffect(() => {
+		load();
+	}, [load]);
 
 	const handleFinalize = async () => {
 		try {
@@ -249,14 +250,14 @@ const TrialContractDetail: React.FC = () => {
             <div className="section-title">التوقيعات / Signatures</div>
             <div className="signatures">
               <div className="lang-ar">
-                <div className="row"><div className="label">اسم الطرف الثاني</div><div className="fill">{contract.sponsorName}</div></div>
-                <div className="row"><div className="label">الرقم المدني</div><div className="fill">{contract.sponsorCivilId}</div></div>
+                <div className="row"><div className="label">اسم الطرف الثاني</div><div className="fill"></div></div>
+                <div className="row"><div className="label">الرقم المدني</div><div className="fill"></div></div>
                 <div className="sig-box"></div>
                 <div className="small muted">توقيع الطرف الثاني (الكفيل)</div>
               </div>
               <div className="lang-en">
-                <div className="row"><div className="label">Name of the Worker</div><div className="fill">{contract.workerName}</div></div>
-                <div className="row"><div className="label">Passport No.</div><div className="fill">{contract.workerPassportNo}</div></div>
+                <div className="row"><div className="label">Name of the Worker</div><div className="fill"></div></div>
+                <div className="row"><div className="label">Passport No.</div><div className="fill"></div></div>
                 <div className="sig-box"></div>
                 <div className="small muted">Signature of the worker</div>
               </div>

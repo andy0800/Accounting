@@ -545,155 +545,179 @@ router.get('/expenses/:visaId', async (req, res) => {
   }
 });
 
-// تصدير تقرير عقود التأجير
-router.get('/rental-contracts', async (req, res) => {
+
+// Rental exports
+router.get('/rental-secretaries', async (req, res) => {
   try {
-    const { status, secretaryId, startDate, endDate } = req.query;
-    
-    let filter = {};
-    if (status) filter.status = status;
-    if (secretaryId) filter.secretaryId = secretaryId;
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate);
-      if (endDate) filter.createdAt.$lte = new Date(endDate);
-    }
-    
-    const contracts = await RentalContract.find(filter)
-      .populate('unitId', 'unitNumber unitType address')
-      .populate('secretaryId', 'name phone email')
-      .sort({ createdAt: -1 });
-    
+    const secretaries = await RentingSecretary.find().sort({ createdAt: -1 });
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('عقود التأجير');
-    
-    // تعريف الأعمدة
+    const worksheet = workbook.addWorksheet('سكرتارية التأجير');
+
     worksheet.columns = [
-      { header: 'رقم العقد', key: 'id', width: 15 },
-      { header: 'رقم الوحدة', key: 'unitNumber', width: 15 },
-      { header: 'نوع الوحدة', key: 'unitType', width: 20 },
-      { header: 'العنوان', key: 'address', width: 30 },
-      { header: 'السكرتير', key: 'secretaryName', width: 25 },
-      { header: 'هاتف السكرتير', key: 'secretaryPhone', width: 20 },
-      { header: 'تاريخ البدء', key: 'startDate', width: 15 },
-      { header: 'تاريخ الانتهاء', key: 'endDate', width: 15 },
-      { header: 'الإيجار الشهري', key: 'monthlyRent', width: 15 },
-      { header: 'يوم الاستحقاق', key: 'dueDay', width: 15 },
-      { header: 'الحالة', key: 'status', width: 15 },
-      { header: 'تاريخ الإنشاء', key: 'createdAt', width: 15 }
+      { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+      { header: bilingualHeader('الهاتف', 'Phone'), key: 'phone', width: 18 },
+      { header: bilingualHeader('البريد الإلكتروني', 'Email'), key: 'email', width: 25 },
+      { header: bilingualHeader('العنوان', 'Address'), key: 'address', width: 30 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 12 },
+      { header: bilingualHeader('عدد المستندات', 'Documents Count'), key: 'docs', width: 18 },
+      { header: bilingualHeader('تاريخ الإنشاء', 'Created At'), key: 'createdAt', width: 18 },
     ];
-    
-    // إضافة البيانات
-    contracts.forEach(contract => {
+
+    secretaries.forEach((sec) => {
       worksheet.addRow({
-        id: contract._id.toString().slice(-8),
-        unitNumber: contract.unitId?.unitNumber || '',
-        unitType: contract.unitId?.unitType || '',
-        address: contract.unitId?.address || '',
-        secretaryName: contract.secretaryId?.name || '',
-        secretaryPhone: contract.secretaryId?.phone || '',
-        startDate: formatDate(contract.startDate),
-        endDate: formatDate(contract.endDate),
-        monthlyRent: contract.monthlyRent || 0,
-        dueDay: contract.dueDay || '',
-        status: contract.status || '',
-        createdAt: formatDate(contract.createdAt)
+        name: sec.name,
+        phone: sec.phone,
+        email: sec.email || '',
+        address: sec.address || '',
+        status: sec.status,
+        docs: (sec.documents || []).length,
+        createdAt: formatDate(sec.createdAt),
       });
     });
-    
-    // تنسيق رأس الجدول
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-    
-    // تنسيق عمود العملة
-    worksheet.getColumn('I').numFmt = '#,##0.00';
-    
-    // تعيين رؤوس الاستجابة
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=rental-contracts-${moment().format('YYYY-MM-DD')}.xlsx`);
-    
+    res.setHeader('Content-Disposition', `attachment; filename=rental-secretaries-${moment().format('YYYY-MM-DD')}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في تصدير عقود التأجير', error: error.message });
+    res.status(500).json({ message: 'خطأ في تصدير سكرتارية التأجير', error: error.message });
   }
 });
 
-// تصدير تقرير المدفوعات
+router.get('/rental-units', async (req, res) => {
+  try {
+    const units = await RentalUnit.find()
+      .populate('currentContract', 'referenceNumber status startDate')
+      .sort({ unitNumber: 1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('الوحدات المؤجرة');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم الوحدة', 'Unit Number'), key: 'unitNumber', width: 18 },
+      { header: bilingualHeader('نوع الوحدة', 'Type'), key: 'unitType', width: 20 },
+      { header: bilingualHeader('العنوان', 'Address'), key: 'address', width: 30 },
+      { header: bilingualHeader('الإيجار الشهري (د.ك)', 'Monthly Rent (KWD)'), key: 'rentAmount', width: 20 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 15 },
+      { header: bilingualHeader('رقم العقد الحالي', 'Current Contract'), key: 'contract', width: 20 },
+      { header: bilingualHeader('تاريخ آخر تحديث', 'Updated At'), key: 'updatedAt', width: 18 },
+    ];
+
+    worksheet.getColumn('rentAmount').numFmt = '#,##0.000';
+
+    units.forEach((unit) => {
+      worksheet.addRow({
+        unitNumber: unit.unitNumber,
+        unitType: unit.unitType,
+        address: unit.address,
+        rentAmount: unit.rentAmount,
+        status: unit.status,
+        contract: unit.currentContract ? unit.currentContract.referenceNumber : '',
+        updatedAt: formatDate(unit.updatedAt),
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=rental-units-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير الوحدات', error: error.message });
+  }
+});
+
+router.get('/rental-contracts', async (req, res) => {
+  try {
+    const contracts = await RentalContract.find()
+      .populate('unitId', 'unitNumber unitType address')
+      .populate('rentalSecretaryId', 'name phone');
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('عقود التأجير');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 18 },
+      { header: bilingualHeader('الوحدة', 'Unit'), key: 'unit', width: 18 },
+      { header: bilingualHeader('نوع الوحدة', 'Unit Type'), key: 'unitType', width: 18 },
+      { header: bilingualHeader('السكرتير', 'Secretary'), key: 'secretary', width: 20 },
+      { header: bilingualHeader('الإيجار الشهري (د.ك)', 'Rent (KWD)'), key: 'rent', width: 18 },
+      { header: bilingualHeader('تاريخ البدء', 'Start Date'), key: 'startDate', width: 15 },
+      { header: bilingualHeader('عدد الشهور', 'Duration (Months)'), key: 'duration', width: 18 },
+      { header: bilingualHeader('يوم الاستحقاق', 'Due Day'), key: 'dueDay', width: 15 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 12 },
+    ];
+
+    worksheet.getColumn('rent').numFmt = '#,##0.000';
+
+    contracts.forEach((contract) => {
+      worksheet.addRow({
+        reference: contract.referenceNumber,
+        unit: contract.unitId ? contract.unitId.unitNumber : contract.unitSnapshot?.unitNumber,
+        unitType: contract.unitId ? contract.unitId.unitType : contract.unitSnapshot?.unitType,
+        secretary: contract.rentalSecretaryId ? contract.rentalSecretaryId.name : contract.secretarySnapshot?.name,
+        rent: contract.rentAmount,
+        startDate: formatDate(contract.startDate),
+        duration: contract.durationMonths,
+        dueDay: contract.dueDay,
+        status: contract.status,
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=rental-contracts-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير العقود', error: error.message });
+  }
+});
+
 router.get('/rental-payments', async (req, res) => {
   try {
-    const { monthYear, contractId, secretaryId } = req.query;
-    
-    let filter = {};
-    if (monthYear) filter.monthYear = monthYear;
-    if (contractId) filter.contractId = contractId;
-    if (secretaryId) {
-      const contracts = await RentalContract.find({ secretaryId });
-      filter.contractId = { $in: contracts.map(c => c._id) };
-    }
-    
-    const payments = await RentalPayment.find(filter)
+    const payments = await RentalPayment.find()
       .populate({
         path: 'contractId',
         populate: [
-          { path: 'unitId', select: 'unitNumber unitType address' },
-          { path: 'secretaryId', select: 'name phone email' }
-        ]
+          { path: 'unitId', select: 'unitNumber unitType' },
+          { path: 'rentalSecretaryId', select: 'name phone' },
+        ],
       })
       .sort({ paymentDate: -1 });
-    
+
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('المدفوعات');
-    
-    // تعريف الأعمدة
+    const worksheet = workbook.addWorksheet('مدفوعات التأجير');
+
     worksheet.columns = [
-      { header: 'رقم الدفعة', key: 'id', width: 15 },
-      { header: 'رقم الوحدة', key: 'unitNumber', width: 15 },
-      { header: 'السكرتير', key: 'secretaryName', width: 25 },
-      { header: 'الشهر/السنة', key: 'monthYear', width: 15 },
-      { header: 'المبلغ', key: 'amount', width: 15 },
-      { header: 'تاريخ الدفع', key: 'paymentDate', width: 15 },
-      { header: 'الوصف', key: 'description', width: 30 },
-      { header: 'نوع الدفع', key: 'paymentType', width: 15 },
-      { header: 'طريقة الدفع', key: 'paymentMethod', width: 20 }
+      { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 18 },
+      { header: bilingualHeader('الشهر', 'Month'), key: 'month', width: 12 },
+      { header: bilingualHeader('رقم العقد', 'Contract Ref'), key: 'contract', width: 20 },
+      { header: bilingualHeader('الوحدة', 'Unit'), key: 'unit', width: 18 },
+      { header: bilingualHeader('السكرتير', 'Secretary'), key: 'secretary', width: 20 },
+      { header: bilingualHeader('المبلغ (د.ك)', 'Amount (KWD)'), key: 'amount', width: 18 },
+      { header: bilingualHeader('طريقة الدفع', 'Method'), key: 'method', width: 15 },
+      { header: bilingualHeader('مرجع العملية', 'Transaction Ref'), key: 'transaction', width: 22 },
+      { header: bilingualHeader('المتبقي', 'Remaining'), key: 'remaining', width: 15 },
     ];
-    
-    // إضافة البيانات
-    payments.forEach(payment => {
+
+    worksheet.getColumn('amount').numFmt = '#,##0.000';
+    worksheet.getColumn('remaining').numFmt = '#,##0.000';
+
+    payments.forEach((payment) => {
       worksheet.addRow({
-        id: payment._id.toString().slice(-8),
-        unitNumber: payment.contractId?.unitId?.unitNumber || '',
-        secretaryName: payment.contractId?.secretaryId?.name || '',
-        monthYear: payment.monthYear || '',
-        amount: payment.amount || 0,
-        paymentDate: formatDate(payment.paymentDate),
-        description: payment.description || '',
-        paymentType: payment.isPartial ? 'جزئي' : 'كامل',
-        paymentMethod: payment.paymentMethod || ''
+        date: formatDate(payment.paymentDate),
+        month: payment.monthYear,
+        contract: payment.contractId?.referenceNumber,
+        unit: payment.contractId?.unitId?.unitNumber || payment.contractId?.unitSnapshot?.unitNumber,
+        secretary: payment.contractId?.rentalSecretaryId?.name || payment.contractId?.secretarySnapshot?.name,
+        amount: payment.amount,
+        method: payment.method,
+        transaction: payment.transactionRef || '',
+        remaining: payment.remainingBalance,
       });
     });
-    
-    // تنسيق رأس الجدول
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-    
-    // تنسيق عمود العملة
-    worksheet.getColumn('E').numFmt = '#,##0.00';
-    
-    // تعيين رؤوس الاستجابة
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=rental-payments-${moment().format('YYYY-MM-DD')}.xlsx`);
-    
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -701,86 +725,101 @@ router.get('/rental-payments', async (req, res) => {
   }
 });
 
-// تصدير تقرير شهري للتأجير
-router.get('/rental-monthly-report/:monthYear', async (req, res) => {
+router.get('/rental-management', async (req, res) => {
   try {
-    const { monthYear } = req.params;
-    
-    // Get active contracts
-    const activeContracts = await RentalContract.find({ status: 'نشط' })
-      .populate('unitId', 'unitNumber unitType address')
-      .populate('secretaryId', 'name phone email');
-    
+    const contracts = await RentalContract.find()
+      .populate('unitId', 'unitNumber unitType')
+      .populate('rentalSecretaryId', 'name phone');
+
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(`تقرير ${monthYear}`);
-    
-    // إضافة ملخص
-    worksheet.addRow(['تقرير شهري للتأجير']);
-    worksheet.addRow([`الشهر: ${monthYear}`]);
-    worksheet.addRow(['']);
-    
-    // إضافة جدول العقود
-    worksheet.addRow(['رقم الوحدة', 'نوع الوحدة', 'السكرتير', 'الإيجار الشهري', 'يوم الاستحقاق', 'المدفوع', 'المتبقي', 'الحالة']);
-    
-    let totalExpected = 0;
-    let totalCollected = 0;
-    let totalOutstanding = 0;
-    
-    for (const contract of activeContracts) {
-      const payments = await RentalPayment.find({ 
-        contractId: contract._id, 
-        monthYear 
+    const worksheet = workbook.addWorksheet('إدارة الإيجارات');
+
+    worksheet.columns = [
+      { header: bilingualHeader('الشهر', 'Month'), key: 'monthYear', width: 12 },
+      { header: bilingualHeader('تاريخ الاستحقاق', 'Due Date'), key: 'dueDate', width: 18 },
+      { header: bilingualHeader('الوحدة', 'Unit'), key: 'unit', width: 18 },
+      { header: bilingualHeader('السكرتير', 'Secretary'), key: 'secretary', width: 20 },
+      { header: bilingualHeader('المبلغ المستحق (د.ك)', 'Due Amount (KWD)'), key: 'dueAmount', width: 22 },
+      { header: bilingualHeader('المدفوع', 'Paid'), key: 'paid', width: 18 },
+      { header: bilingualHeader('المتبقي', 'Remaining'), key: 'remaining', width: 18 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 15 },
+    ];
+
+    worksheet.getColumn('dueAmount').numFmt = '#,##0.000';
+    worksheet.getColumn('paid').numFmt = '#,##0.000';
+    worksheet.getColumn('remaining').numFmt = '#,##0.000';
+
+    contracts.forEach((contract) => {
+      contract.months.forEach((month) => {
+        worksheet.addRow({
+          monthYear: month.monthYear,
+          dueDate: formatDate(month.dueDate),
+          unit: contract.unitId ? contract.unitId.unitNumber : contract.unitSnapshot?.unitNumber,
+          secretary: contract.rentalSecretaryId ? contract.rentalSecretaryId.name : contract.secretarySnapshot?.name,
+          dueAmount: month.dueAmount,
+          paid: month.totalPaid,
+          remaining: month.remainingAmount,
+          status: month.status,
+        });
       });
-      
-      const monthCollected = payments.reduce((sum, payment) => sum + payment.amount, 0);
-      const remainingBalance = Math.max(0, contract.monthlyRent - monthCollected);
-      const paymentStatus = monthCollected >= contract.monthlyRent ? 'مدفوع' : 
-                           monthCollected > 0 ? 'جزئي' : 'غير مدفوع';
-      
-      worksheet.addRow([
-        contract.unitId?.unitNumber || '',
-        contract.unitId?.unitType || '',
-        contract.secretaryId?.name || '',
-        contract.monthlyRent || 0,
-        contract.dueDay || '',
-        monthCollected,
-        remainingBalance,
-        paymentStatus
-      ]);
-      
-      totalExpected += contract.monthlyRent;
-      totalCollected += monthCollected;
-      totalOutstanding += remainingBalance;
-    }
-    
-    // إضافة الإجماليات
-    worksheet.addRow(['']);
-    worksheet.addRow(['الإجمالي', '', '', totalExpected, '', totalCollected, totalOutstanding, '']);
-    
-    // تنسيق رأس الجدول
-    const headerRow = worksheet.getRow(5);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-    
-    // تنسيق أعمدة العملة
-    const currencyColumns = ['D', 'F', 'G'];
-    currencyColumns.forEach(col => {
-      worksheet.getColumn(col).numFmt = '#,##0.00';
     });
-    
-    // تعيين رؤوس الاستجابة
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=rental-monthly-${monthYear}-${moment().format('YYYY-MM-DD')}.xlsx`);
-    
+    res.setHeader('Content-Disposition', `attachment; filename=rental-management-${moment().format('YYYY-MM-DD')}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في تصدير التقرير الشهري', error: error.message });
+    res.status(500).json({ message: 'خطأ في تصدير إدارة الإيجارات', error: error.message });
   }
 });
+
+router.get('/rental-accounting', async (req, res) => {
+  try {
+    const targetMonth = req.query.month || moment().format('YYYY-MM');
+    const contracts = await RentalContract.find()
+      .populate('unitId', 'unitNumber unitType')
+      .populate('rentalSecretaryId', 'name phone');
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('محاسبة التأجير');
+
+    worksheet.columns = [
+      { header: bilingualHeader('الشهر', 'Month'), key: 'month', width: 12 },
+      { header: bilingualHeader('الوحدة', 'Unit'), key: 'unit', width: 18 },
+      { header: bilingualHeader('السكرتير', 'Secretary'), key: 'secretary', width: 20 },
+      { header: bilingualHeader('المبلغ المتوقع (د.ك)', 'Expected (KWD)'), key: 'expected', width: 22 },
+      { header: bilingualHeader('المبلغ المدفوع', 'Paid Amount'), key: 'paid', width: 18 },
+      { header: bilingualHeader('المتبقي', 'Remaining'), key: 'remaining', width: 18 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 15 },
+    ];
+
+    worksheet.getColumn('expected').numFmt = '#,##0.000';
+    worksheet.getColumn('paid').numFmt = '#,##0.000';
+    worksheet.getColumn('remaining').numFmt = '#,##0.000';
+
+    contracts.forEach((contract) => {
+      const monthEntry = contract.months.find((m) => m.monthYear === targetMonth);
+      if (!monthEntry) return;
+
+      worksheet.addRow({
+        month: targetMonth,
+        unit: contract.unitId ? contract.unitId.unitNumber : contract.unitSnapshot?.unitNumber,
+        secretary: contract.rentalSecretaryId ? contract.rentalSecretaryId.name : contract.secretarySnapshot?.name,
+        expected: monthEntry.dueAmount,
+        paid: monthEntry.totalPaid,
+        remaining: monthEntry.remainingAmount,
+        status: monthEntry.status,
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=rental-accounting-${targetMonth}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير محاسبة التأجير', error: error.message });
+  }
+});
+
 
 module.exports = router; 

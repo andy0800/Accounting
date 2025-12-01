@@ -16,7 +16,7 @@ import {
 	CircularProgress,
 	Chip
 } from '@mui/material';
-import { Add as AddIcon, Save as SaveIcon } from '@mui/icons-material';
+import { Save as SaveIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../config/axios';
 import { auth } from '../utils/auth';

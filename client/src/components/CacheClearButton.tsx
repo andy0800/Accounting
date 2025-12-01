@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
-  Refresh as RefreshIcon,
   Storage as StorageIcon,
   Cloud as CloudIcon,
   Cookie as CookieIcon,

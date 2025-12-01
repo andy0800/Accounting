@@ -1,85 +1,173 @@
 const mongoose = require('mongoose');
+const dayjs = require('dayjs');
+
+const rentalMonthSchema = new mongoose.Schema({
+  monthIndex: Number,
+  monthYear: {
+    type: String,
+    required: true, // format YYYY-MM
+  },
+  dueDate: {
+    type: Date,
+    required: true,
+  },
+  dueAmount: {
+    type: Number,
+    required: true,
+  },
+  totalPaid: {
+    type: Number,
+    default: 0,
+  },
+  remainingAmount: {
+    type: Number,
+    default: function defaultRemaining() {
+      return this.dueAmount;
+    },
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Paid', 'Partially Paid', 'Overdue'],
+    default: 'Pending',
+  },
+  payments: [{
+    paymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'RentalPayment',
+    },
+    amount: Number,
+    method: {
+      type: String,
+      enum: ['Cash', 'KNET/Link'],
+    },
+    transactionRef: String,
+    paymentDate: Date,
+  }],
+}, { _id: false });
 
 const rentalContractSchema = new mongoose.Schema({
-  secretaryId: {
+  referenceNumber: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  unitId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'RentalUnit',
+    required: true,
+  },
+  unitSnapshot: {
+    unitType: String,
+    unitNumber: String,
+    address: String,
+  },
+  rentalSecretaryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'RentingSecretary',
-    required: [true, 'السكرتير مطلوب']
+    required: true,
   },
-  unitType: {
-    type: String,
-    required: [true, 'نوع الوحدة المؤجرة مطلوب'],
-    trim: true
-  },
-  unitNumber: {
-    type: String,
-    required: [true, 'رقم الوحدة مطلوب'],
-    trim: true
-  },
-  address: {
-    type: String,
-    required: [true, 'عنوان الوحدة مطلوب'],
-    trim: true
+  secretarySnapshot: {
+    name: String,
+    phone: String,
+    email: String,
   },
   rentAmount: {
     type: Number,
-    required: [true, 'مبلغ الإيجار مطلوب'],
-    min: [0, 'مبلغ الإيجار يجب أن يكون موجب']
+    required: true,
+    min: [0, 'مبلغ الإيجار يجب أن يكون أكبر من صفر'],
+  },
+  currency: {
+    type: String,
+    enum: ['KWD'],
+    default: 'KWD',
   },
   startDate: {
     type: Date,
-    required: [true, 'تاريخ بدء العقد مطلوب']
+    required: true,
   },
   dueDay: {
     type: Number,
-    required: [true, 'يوم الاستحقاق مطلوب'],
-    min: [1, 'يوم الاستحقاق يجب أن يكون بين 1 و 31'],
-    max: [31, 'يوم الاستحقاق يجب أن يكون بين 1 و 31']
+    min: 1,
+    max: 31,
+    required: true,
+  },
+  durationMonths: {
+    type: Number,
+    min: 1,
+    max: 60,
+    default: 12,
   },
   status: {
     type: String,
     enum: ['نشط', 'منتهي'],
-    default: 'نشط'
+    default: 'نشط',
   },
-  terminationDate: {
-    type: Date
-  },
-  terminationReason: {
-    type: String,
-    trim: true
-  },
+  terminationDate: Date,
+  terminationReason: String,
+  notes: String,
   documents: [{
     name: String,
     filePath: String,
     uploadDate: {
       type: Date,
-      default: Date.now
-    }
+      default: Date.now,
+    },
   }],
-  notes: {
-    type: String,
-    trim: true
-  },
-  // Fixed reference number for rental contract
-  referenceNumber: { type: String, unique: true, sparse: true }
+  months: [rentalMonthSchema],
 }, {
-  timestamps: true
+  timestamps: true,
 });
 
-// Index for better search performance
-rentalContractSchema.index({ secretaryId: 1, status: 1 });
-rentalContractSchema.index({ unitNumber: 1, status: 1 });
-rentalContractSchema.index({ referenceNumber: 1 }, { unique: true, sparse: true });
+rentalContractSchema.index({ rentalSecretaryId: 1, status: 1 });
+rentalContractSchema.index({ unitId: 1, status: 1 });
+rentalContractSchema.index({ referenceNumber: 1 });
 
-// Generate reference number on create if missing
-rentalContractSchema.pre('save', function(next) {
-	if (!this.referenceNumber) {
-		const created = this.createdAt ? new Date(this.createdAt) : new Date();
-		const year = created.getFullYear();
-		const shortId = this._id ? this._id.toString().slice(-6).toUpperCase() : Math.random().toString(36).slice(-6).toUpperCase();
-		this.referenceNumber = `RC-${year}-${shortId}`;
-	}
-	next();
+function padNumber(num, size = 4) {
+  let s = String(num);
+  while (s.length < size) s = `0${s}`;
+  return s;
+}
+
+rentalContractSchema.statics.generateReferenceNumber = async function generateReferenceNumber() {
+  const count = await this.countDocuments();
+  const year = dayjs().format('YY');
+  return `RC-${year}-${padNumber(count + 1, 5)}`;
+};
+
+function buildSchedule(startDate, dueDay, duration, rentAmount) {
+  const base = dayjs(startDate);
+  const schedule = [];
+
+  for (let i = 0; i < duration; i += 1) {
+    const scheduledDate = base.add(i, 'month').date(Math.min(dueDay, base.add(i, 'month').daysInMonth()));
+    schedule.push({
+      monthIndex: i,
+      monthYear: scheduledDate.format('YYYY-MM'),
+      dueDate: scheduledDate.toDate(),
+      dueAmount: rentAmount,
+      totalPaid: 0,
+      remainingAmount: rentAmount,
+      status: 'Pending',
+      payments: [],
+    });
+  }
+
+  return schedule;
+}
+
+rentalContractSchema.methods.ensureSchedule = function ensureSchedule() {
+  if (!this.months || this.months.length === 0) {
+    this.months = buildSchedule(this.startDate, this.dueDay, this.durationMonths, this.rentAmount);
+  }
+};
+
+rentalContractSchema.pre('save', async function preSave(next) {
+  if (!this.referenceNumber) {
+    this.referenceNumber = await this.constructor.generateReferenceNumber();
+  }
+  this.ensureSchedule();
+  next();
 });
 
 module.exports = mongoose.model('RentalContract', rentalContractSchema);
+

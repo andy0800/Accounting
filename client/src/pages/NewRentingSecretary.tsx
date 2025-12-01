@@ -1,112 +1,85 @@
 import React, { useState } from 'react';
-import apiClient from '../config/axios';
 import {
   Box,
   Card,
   CardContent,
-  Typography,
+  Grid,
   TextField,
   Button,
-  Grid,
+  Typography,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Stack,
 } from '@mui/material';
-import {
-  Person as PersonIcon,
-  ArrowBack as ArrowBackIcon,
-  Save as SaveIcon
-} from '@mui/icons-material';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useNavigate } from 'react-router-dom';
-
-interface NewRentingSecretaryForm {
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  notes: string;
-}
+import apiClient from '../config/axios';
 
 const NewRentingSecretary: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState<NewRentingSecretaryForm>({
+  const [form, setForm] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
-    notes: ''
+    idNumber: '',
+    notes: '',
   });
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleInputChange = (field: keyof NewRentingSecretaryForm) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setForm(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
+  const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files ? Array.from(event.target.files) : [];
+    setFiles(selected);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+    setError(null);
     if (!form.name || !form.phone) {
-      setError('يرجى ملء الحقول المطلوبة (الاسم والهاتف)');
+      setError('الاسم ورقم الهاتف مطلوبان');
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
+      const data = new FormData();
+      Object.entries(form).forEach(([key, value]) => data.append(key, value));
+      files.forEach((file) => data.append('documents', file));
 
-      await apiClient.post('/api/renting-secretaries', {
-        name: form.name,
-        phone: form.phone,
-        email: form.email || undefined,
-        address: form.address || undefined,
-        notes: form.notes || undefined
+      await apiClient.post('/api/renting-secretaries', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/renting/secretaries');
-      }, 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
+      setTimeout(() => navigate('/renting/secretaries'), 1500);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'فشل في إنشاء السكرتير');
     } finally {
       setLoading(false);
     }
   };
 
-  const isFormValid = form.name && form.phone;
-
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/renting/secretaries')}
-          sx={{ mr: 2 }}
-        >
-          رجوع
-        </Button>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          إضافة سكرتير إيجار جديد
-        </Typography>
-      </Box>
+      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+        إضافة سكرتير تأجير جديد
+      </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          تم إضافة السكرتير بنجاح! سيتم توجيهك إلى صفحة السكرتارية...
+        <Alert severity="success" sx={{ mb: 2 }}>
+          تم حفظ البيانات بنجاح
         </Alert>
       )}
 
@@ -115,85 +88,50 @@ const NewRentingSecretary: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="اسم السكرتير"
-                  value={form.name}
-                  onChange={handleInputChange('name')}
-                  placeholder="الاسم الكامل"
-                  required
-                  disabled={loading}
-                />
+                <TextField label="الاسم" value={form.name} onChange={handleChange('name')} required fullWidth />
               </Grid>
-
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="رقم الهاتف"
-                  value={form.phone}
-                  onChange={handleInputChange('phone')}
-                  placeholder="رقم الهاتف"
-                  required
-                  disabled={loading}
-                />
+                <TextField label="رقم الهاتف" value={form.phone} onChange={handleChange('phone')} required fullWidth />
               </Grid>
-
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="البريد الإلكتروني (اختياري)"
-                  value={form.email}
-                  onChange={handleInputChange('email')}
-                  placeholder="example@email.com"
-                  type="email"
-                  disabled={loading}
-                />
+                <TextField label="البريد الإلكتروني" value={form.email} onChange={handleChange('email')} fullWidth />
               </Grid>
-
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="العنوان (اختياري)"
-                  value={form.address}
-                  onChange={handleInputChange('address')}
-                  placeholder="العنوان"
-                  disabled={loading}
-                />
+                <TextField label="العنوان" value={form.address} onChange={handleChange('address')} fullWidth />
               </Grid>
-
+              <Grid item xs={12} md={6}>
+                <TextField label="الرقم المدني" value={form.idNumber} onChange={handleChange('idNumber')} fullWidth />
+              </Grid>
               <Grid item xs={12}>
                 <TextField
-                  fullWidth
-                  label="ملاحظات (اختياري)"
+                  label="ملاحظات"
                   value={form.notes}
-                  onChange={handleInputChange('notes')}
-                  placeholder="ملاحظات إضافية"
-                  disabled={loading}
+                  onChange={handleChange('notes')}
+                  fullWidth
                   multiline
                   rows={3}
                 />
               </Grid>
-
               <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => navigate('/renting/secretaries')}
-                    disabled={loading}
-                  >
-                    إلغاء
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-                    disabled={!isFormValid || loading}
-                  >
-                    {loading ? 'جاري الحفظ...' : 'حفظ السكرتير'}
-                  </Button>
-                </Box>
+                <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
+                  رفع مستندات
+                  <input type="file" hidden multiple onChange={handleFileChange} />
+                </Button>
+                {files.length > 0 && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    تم اختيار {files.length} ملف/ملفات
+                  </Typography>
+                )}
               </Grid>
             </Grid>
+            <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
+              <Button variant="text" onClick={() => navigate(-1)}>
+                إلغاء
+              </Button>
+              <Button type="submit" variant="contained" disabled={loading}>
+                {loading ? <CircularProgress size={20} /> : 'حفظ'}
+              </Button>
+            </Stack>
           </form>
         </CardContent>
       </Card>
@@ -202,3 +140,4 @@ const NewRentingSecretary: React.FC = () => {
 };
 
 export default NewRentingSecretary;
+

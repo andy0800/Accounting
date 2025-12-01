@@ -21,49 +21,6 @@ const apiClient = axios.create({
   validateStatus: (status) => status >= 200 && status < 300,
 });
 
-// Simple in-memory cache for API responses
-const cache = new Map();
-const CACHE_DURATION = 10 * 60 * 1000; // Increased to 10 minutes for better performance
-
-// Advanced retry logic for Render free tier
-const retryRequest = async (config, retryCount = 0) => {
-  const maxRetries = config.retry || 5;
-  
-  try {
-    const response = await axios(config);
-    return response;
-  } catch (error) {
-    const shouldRetry = (
-      retryCount < maxRetries &&
-      (
-        error.code === 'ECONNABORTED' || // Timeout
-        error.code === 'ENOTFOUND' || // DNS resolution failed
-        error.code === 'ECONNRESET' || // Connection reset
-        error.code === 'ETIMEDOUT' || // Connection timeout
-        (error.response && error.response.status >= 500) || // Server errors
-        !error.response // Network errors
-      )
-    );
-
-    if (shouldRetry) {
-      const delay = config.retryDelay ? config.retryDelay(retryCount) : Math.pow(2, retryCount + 1) * 1000;
-      
-      console.log(`🔄 Retrying request (attempt ${retryCount + 1}/${maxRetries}) after ${delay}ms...`);
-      console.log(`📍 URL: ${config.method?.toUpperCase()} ${config.url}`);
-      
-      // Show user-friendly message for cold starts
-      if (error.code === 'ECONNABORTED' && retryCount === 0) {
-        console.log('❄️ Backend is cold starting (Render free tier) - this may take up to 2 minutes');
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return retryRequest(config, retryCount + 1);
-    }
-    
-    throw error;
-  }
-};
-
 // Wake up backend function
 const wakeUpBackend = async () => {
   try {
@@ -99,6 +56,12 @@ apiClient.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // If sending FormData, let the browser set proper multipart boundary
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      config.headers = config.headers || {};
+      // Remove preset JSON content-type so axios sets multipart/form-data
+      delete config.headers['Content-Type'];
+    }
   } catch (_) {}
     
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
@@ -114,16 +77,6 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     console.log(`✅ API Response: ${response.status} ${response.config.url}`);
-    
-    // Cache GET requests for 10 minutes
-    if (response.config.method === 'get' && response.status === 200) {
-      const cacheKey = response.config.url;
-      cache.set(cacheKey, {
-        data: response.data,
-        timestamp: Date.now()
-      });
-      console.log(`💾 Cached response: ${cacheKey}`);
-    }
     
     return response;
   },
@@ -206,5 +159,5 @@ apiClient.interceptors.response.use(
 );
 
 // Export additional utilities
-export { wakeUpBackend, cache };
+export { wakeUpBackend };
 export default apiClient;

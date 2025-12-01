@@ -19,11 +19,11 @@ import {
   AccountBalance as AccountIcon,
   Menu as MenuIcon,
   Add as AddIcon,
+  Description,
   Home as HomeIcon,
   Business as BusinessIcon,
   Apartment as ApartmentIcon,
-  Description,
-  Assessment,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CacheClearButton from './CacheClearButton';
@@ -50,13 +50,16 @@ const Navigation: React.FC = () => {
   ];
 
   const rentingMenuItems = [
-    { text: 'نظام التأجير', icon: <HomeIcon />, path: '/renting', section: 'renting', roles: ['admin'] },
-    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/renting/secretaries', section: 'renting', roles: ['admin'] },
-    { text: 'الوحدات المؤجرة', icon: <ApartmentIcon />, path: '/renting/units', section: 'renting', roles: ['admin'] },
-    { text: 'عقود التأجير', icon: <Description />, path: '/renting/contracts', section: 'renting', roles: ['admin','secretary'] },
-    { text: 'العقود المنتهية', icon: <Description />, path: '/renting/terminated', section: 'renting', roles: ['admin'] },
-    { text: 'التقارير', icon: <Assessment />, path: '/renting/reports', section: 'renting', roles: ['admin'] },
+    { text: 'لوحة التأجير', icon: <HomeIcon />, path: '/renting', roles: ['admin'] },
+    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/renting/secretaries', roles: ['admin'] },
+    { text: 'وحدة جديدة', icon: <AddIcon />, path: '/renting/units/new', roles: ['admin'] },
+    { text: 'الوحدات', icon: <ApartmentIcon />, path: '/renting/units', roles: ['admin'] },
+    { text: 'عقد تأجير جديد', icon: <AddIcon />, path: '/renting/contracts/new', roles: ['admin'] },
+    { text: 'عقود التأجير', icon: <Description />, path: '/renting/contracts', roles: ['admin'] },
+    { text: 'إدارة الدفعات', icon: <AssessmentIcon />, path: '/renting/management', roles: ['admin'] },
+    { text: 'محاسبة التأجير', icon: <AccountIcon />, path: '/renting/accounting', roles: ['admin'] },
   ];
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -90,24 +93,21 @@ const Navigation: React.FC = () => {
       </List>
       <Divider />
       <List>
-        <ListItem sx={{ py: 1 }}>
-          <ListItemText 
-            primary="نظام التأجير" 
-            primaryTypographyProps={{ 
-              variant: 'subtitle2', 
-              color: 'primary.main',
-              fontWeight: 'bold',
-              sx: { textAlign: 'center' }
-            }} 
-          />
-        </ListItem>
+        <ListItemText
+          primary="نظام التأجير"
+          primaryTypographyProps={{
+            variant: 'subtitle2',
+            color: 'primary.main',
+            fontWeight: 'bold',
+            sx: { textAlign: 'center' },
+          }}
+        />
         {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
           <ListItem
             button
             key={item.text}
             onClick={() => handleNavigation(item.path)}
             selected={location.pathname === item.path}
-            sx={{ pl: 3 }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
