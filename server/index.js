@@ -51,19 +51,19 @@ app.options('*', cors(corsOptions));
 
 // Add response caching headers
 app.use((req, res, next) => {
-  // Cache static assets for 1 hour
-  if (req.url.startsWith('/uploads/')) {
-    res.set('Cache-Control', 'public, max-age=3600');
-  }
-  // Cache API GET responses (non-auth) for 5 minutes only
-  else if (
-    req.method === 'GET' &&
-    req.url.startsWith('/api/') &&
-    !req.url.startsWith('/api/auth')
-  ) {
+  const isStaticUpload = req.url.startsWith('/uploads/');
+  const isApiGet = req.method === 'GET' && req.url.startsWith('/api/');
+  const isAuthEndpoint = req.url.startsWith('/api/auth');
+  const hasAuthHeader = Boolean(req.headers.authorization);
+
+  if (isStaticUpload) {
+    // Allow caching for public assets only
+    res.set('Cache-Control', 'public, max-age=3600, immutable');
+  } else if (isApiGet && !isAuthEndpoint && !hasAuthHeader) {
+    // Cache only anonymous GET responses briefly
     res.set('Cache-Control', 'public, max-age=300');
   } else {
-    // Do not cache non-GET or auth endpoints
+    // Never cache authenticated or mutating responses
     res.set('Cache-Control', 'no-store');
   }
   next();
