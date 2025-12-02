@@ -52,7 +52,8 @@ const RentalUnits: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/api/rental-units');
-      setUnits(response.data?.units || []);
+      const fetchedUnits = Array.isArray(response.data) ? response.data : response.data?.units || [];
+      setUnits(fetchedUnits);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في جلب الوحدات');
     } finally {
