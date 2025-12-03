@@ -196,6 +196,7 @@ const RentalUnits: React.FC = () => {
   const [detailsData, setDetailsData] = useState<RentalUnitDetails | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     const handler = setTimeout(() => setSearch(searchInput.trim()), 400);
@@ -233,6 +234,15 @@ const RentalUnits: React.FC = () => {
       console.log('✅ Normalized response:', normalized);
       console.log('✅ Units count:', normalized.units.length);
       console.log('✅ First unit:', normalized.units[0]);
+
+      // Debug: Store raw response for inspection
+      setDebugInfo({
+        rawResponse: data,
+        normalized,
+        unitsCount: normalized.units.length,
+        responseType: Array.isArray(data) ? 'array' : typeof data,
+        responseKeys: data ? Object.keys(data) : [],
+      });
 
       setUnits(normalized.units);
       setCounts(normalized.counts);
@@ -381,6 +391,25 @@ const RentalUnits: React.FC = () => {
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
             تحقق من اتصال الإنترنت وحالة المصادقة
+          </Typography>
+        </Alert>
+      )}
+
+      {/* Debug Info - Remove after fixing */}
+      {debugInfo && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="caption" component="div">
+            <strong>Debug Info:</strong><br />
+            Response Type: {debugInfo.responseType}<br />
+            Response Keys: {debugInfo.responseKeys.join(', ') || 'none'}<br />
+            Units Count: {debugInfo.unitsCount}<br />
+            Current Units State: {units.length}<br />
+            <details style={{ marginTop: '8px' }}>
+              <summary>Raw Response (click to expand)</summary>
+              <pre style={{ fontSize: '10px', overflow: 'auto', maxHeight: '200px' }}>
+                {JSON.stringify(debugInfo.rawResponse, null, 2)}
+              </pre>
+            </details>
           </Typography>
         </Alert>
       )}

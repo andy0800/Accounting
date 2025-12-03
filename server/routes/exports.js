@@ -20,6 +20,11 @@ const formatDate = (date) => {
   }
 };
 
+// دالة مساعدة لإنشاء رؤوس ثنائية اللغة
+const bilingualHeader = (arabic, english) => {
+  return `${arabic} / ${english}`;
+};
+
 // تصدير جميع التأشيرات
 router.get('/visas/all', async (req, res) => {
   try {
