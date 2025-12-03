@@ -47,21 +47,84 @@ const upload = multer({
   },
 });
 
+const SORT_MAP = {
+  'unitNumber': { unitNumber: 1 },
+  '-unitNumber': { unitNumber: -1 },
+  'rentAmount': { rentAmount: 1 },
+  '-rentAmount': { rentAmount: -1 },
+  'status': { status: 1 },
+  '-status': { status: -1 },
+  'createdAt': { createdAt: 1 },
+  '-createdAt': { createdAt: -1 },
+};
+
+const getSortOptions = (sortKey) => {
+  if (typeof sortKey === 'string' && SORT_MAP[sortKey]) {
+    return SORT_MAP[sortKey];
+  }
+  return { createdAt: -1 };
+};
+
 router.get('/', async (req, res) => {
   try {
-    const { status, search } = req.query;
-    const query = {};
-    if (status) query.status = status;
+    const { status, search, page = 1, limit = 50, sort = '-createdAt' } = req.query;
+
+    const filters = {};
+    if (status && status !== 'all') {
+      filters.status = status;
+    }
     if (search) {
-      query.$or = [
-        { unitNumber: { $regex: search, $options: 'i' } },
-        { unitType: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
+      const regex = new RegExp(search, 'i');
+      filters.$or = [
+        { unitNumber: regex },
+        { unitType: regex },
+        { address: regex },
+        { notes: regex },
       ];
     }
-    const units = await RentalUnit.find(query)
-      .populate('currentContract', 'referenceNumber status rentAmount startDate durationMonths');
-    res.json(units);
+
+    const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNumber - 1) * pageSize;
+    const sortOptions = getSortOptions(sort);
+
+    const [units, total, statusBuckets] = await Promise.all([
+      RentalUnit.find(filters)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(pageSize)
+        .populate('currentContract', 'referenceNumber status rentAmount startDate durationMonths'),
+      RentalUnit.countDocuments(filters),
+      RentalUnit.aggregate([
+        ...(Object.keys(filters).length ? [{ $match: filters }] : []),
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const statusCounts = statusBuckets.reduce((acc, bucket) => {
+      acc[bucket._id || 'غير محدد'] = bucket.count;
+      return acc;
+    }, {});
+
+    res.json({
+      units,
+      filters: {
+        status: status || null,
+        search: search || null,
+      },
+      pagination: {
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        pages: Math.max(1, Math.ceil(total / pageSize)),
+        hasMore: pageNumber * pageSize < total,
+      },
+      counts: {
+        total,
+        byStatus: statusCounts,
+      },
+      sort: typeof sort === 'string' ? sort : '-createdAt',
+    });
   } catch (error) {
     res.status(500).json({ message: 'خطأ في جلب الوحدات', error: error.message });
   }
