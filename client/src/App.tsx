@@ -36,6 +36,13 @@ const RentalManagement = React.lazy(() => import('./pages/RentalManagement'));
 const RentalAccounting = React.lazy(() => import('./pages/RentalAccounting'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Users = React.lazy(() => import('./pages/Users'));
+// Home Service pages
+const HSDashboard = React.lazy(() => import('./pages/home-service/HSDashboard'));
+const HSInvoices = React.lazy(() => import('./pages/home-service/HSInvoices'));
+const HSNewInvoice = React.lazy(() => import('./pages/home-service/HSNewInvoice'));
+const HSInvoiceDetails = React.lazy(() => import('./pages/home-service/HSInvoiceDetails'));
+const HSDeletedInvoices = React.lazy(() => import('./pages/home-service/HSDeletedInvoices'));
+const HSAccounting = React.lazy(() => import('./pages/home-service/HSAccounting'));
 
 
 // Create rtl cache
@@ -264,6 +271,11 @@ function App() {
       if (path.startsWith('/trial-contracts')) return element;
       return <Navigate to="/trial-contracts" replace />;
     }
+    if (role === 'home_service_user') {
+      // allow only home service routes
+      if (path.startsWith('/home-service')) return element;
+      return <Navigate to="/home-service" replace />;
+    }
     return <Navigate to="/login" replace />;
   };
 
@@ -305,6 +317,14 @@ function App() {
 
                     {/* Users (admin only) */}
                     <Route path="/users" element={protect(<Users />, '/users')} />
+
+                    {/* Home Service system */}
+                    <Route path="/home-service" element={protect(<HSDashboard />, '/home-service')} />
+                    <Route path="/home-service/invoices" element={protect(<HSInvoices />, '/home-service/invoices')} />
+                    <Route path="/home-service/invoices/new" element={protect(<HSNewInvoice />, '/home-service/invoices/new')} />
+                    <Route path="/home-service/invoices/:id" element={protect(<HSInvoiceDetails />, '/home-service/invoices/:id')} />
+                    <Route path="/home-service/deleted" element={protect(<HSDeletedInvoices />, '/home-service/deleted')} />
+                    <Route path="/home-service/accounting" element={protect(<HSAccounting />, '/home-service/accounting')} />
                     
                     {/* Fallback route for 404 errors */}
                     <Route path="*" element={

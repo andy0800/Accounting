@@ -24,6 +24,9 @@ import {
   Business as BusinessIcon,
   Apartment as ApartmentIcon,
   Assessment as AssessmentIcon,
+  Receipt as ReceiptIcon,
+  Delete as DeleteIcon,
+  HomeWork as HomeWorkIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CacheClearButton from './CacheClearButton';
@@ -60,6 +63,15 @@ const Navigation: React.FC = () => {
     { text: 'محاسبة التأجير', icon: <AccountIcon />, path: '/renting/accounting', roles: ['admin'] },
   ];
 
+  const homeServiceMenuItems = [
+    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/home-service', roles: ['admin', 'home_service_user'] },
+    { text: 'الفواتير', icon: <ReceiptIcon />, path: '/home-service/invoices', roles: ['admin', 'home_service_user'] },
+    { text: 'فاتورة دخل جديدة', icon: <AddIcon />, path: '/home-service/invoices/new?type=income', roles: ['admin', 'home_service_user'] },
+    { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/home-service/invoices/new?type=spending', roles: ['admin', 'home_service_user'] },
+    { text: 'المحذوفات', icon: <DeleteIcon />, path: '/home-service/deleted', roles: ['admin', 'home_service_user'] },
+    { text: 'المحاسبة', icon: <AccountIcon />, path: '/home-service/accounting', roles: ['admin', 'home_service_user'] },
+  ];
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -70,51 +82,109 @@ const Navigation: React.FC = () => {
     setMobileOpen(false);
   };
 
+  // Determine what title to show based on role
+  const getSystemTitle = () => {
+    if (role === 'home_service_user') {
+      return 'نظام محاسبة الخدمات المنزلية';
+    }
+    return 'نظام التأشيرات';
+  };
+
+  // For home_service_user, only show home service menu
+  const isHomeServiceOnly = role === 'home_service_user';
+
   const drawer = (
     <Box>
       <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          نظام التأشيرات
+        <Typography variant="h6" noWrap component="div" sx={{ fontSize: isHomeServiceOnly ? '0.95rem' : '1.25rem' }}>
+          {getSystemTitle()}
         </Typography>
       </Toolbar>
       <Divider />
-      <List>
-        {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => handleNavigation(item.path)}
-            selected={location.pathname === item.path}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        <ListItemText
-          primary="نظام التأجير"
-          primaryTypographyProps={{
-            variant: 'subtitle2',
-            color: 'primary.main',
-            fontWeight: 'bold',
-            sx: { textAlign: 'center' },
-          }}
-        />
-        {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => handleNavigation(item.path)}
-            selected={location.pathname === item.path}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
+      
+      {/* Main menu items - hidden for home_service_user */}
+      {!isHomeServiceOnly && (
+        <>
+          <List>
+            {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                onClick={() => handleNavigation(item.path)}
+                selected={location.pathname === item.path}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+          <Divider />
+        </>
+      )}
+      
+      {/* Renting menu items - hidden for home_service_user */}
+      {!isHomeServiceOnly && (
+        <>
+          <List>
+            <ListItemText
+              primary="نظام التأجير"
+              primaryTypographyProps={{
+                variant: 'subtitle2',
+                color: 'primary.main',
+                fontWeight: 'bold',
+                sx: { textAlign: 'center' },
+              }}
+            />
+            {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                onClick={() => handleNavigation(item.path)}
+                selected={location.pathname === item.path}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+          <Divider />
+        </>
+      )}
+      
+      {/* Home Service menu items - shown for admin and home_service_user */}
+      {(role === 'admin' || role === 'home_service_user') && (
+        <>
+          <List>
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                  <HomeWorkIcon fontSize="small" color="success" />
+                  <span>نظام محاسبة الخدمات المنزلية</span>
+                </Box>
+              }
+              primaryTypographyProps={{
+                variant: 'subtitle2',
+                color: 'success.main',
+                fontWeight: 'bold',
+                sx: { textAlign: 'center' },
+              }}
+            />
+            {homeServiceMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                onClick={() => handleNavigation(item.path)}
+                selected={location.pathname === item.path || location.pathname + location.search === item.path}
+              >
+                <ListItemIcon sx={{ color: 'success.main' }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+          <Divider />
+        </>
+      )}
+      
       <List>
         <ListItem sx={{ px: 2, py: 1 }}>
           <CacheClearButton />
@@ -143,7 +213,7 @@ const Navigation: React.FC = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            نظام إدارة التأشيرات والمحاسبة
+            {isHomeServiceOnly ? 'نظام محاسبة الخدمات المنزلية' : 'نظام إدارة التأشيرات والمحاسبة'}
           </Typography>
         </Toolbar>
       </AppBar>

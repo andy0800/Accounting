@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, Card, CardContent, Container, Grid, TextField, Typography, Alert, MenuItem, CircularProgress } from '@mui/material';
 import apiClient from '../config/axios';
 
-interface UserRow { username: string; role: 'admin' | 'secretary'; }
+interface UserRow { username: string; role: 'admin' | 'secretary' | 'home_service_user'; }
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -61,8 +61,9 @@ const Users: React.FC = () => {
               </Grid>
               <Grid item xs={12} md={4}>
                 <TextField select fullWidth label="الدور" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                  <MenuItem value="secretary">Secretary</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="secretary">سكرتير (Secretary)</MenuItem>
+                  <MenuItem value="admin">مسؤول (Admin)</MenuItem>
+                  <MenuItem value="home_service_user">مستخدم خدمات منزلية (Home Service)</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12}>
@@ -84,11 +85,18 @@ const Users: React.FC = () => {
             <CircularProgress />
           ) : (
             <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-              {users.map((u) => (
-                <li key={u.username}>
-                  <Typography variant="body2">{u.username} — {u.role}</Typography>
-                </li>
-              ))}
+              {users.map((u) => {
+                const roleLabels: Record<string, string> = {
+                  admin: 'مسؤول',
+                  secretary: 'سكرتير',
+                  home_service_user: 'مستخدم خدمات منزلية',
+                };
+                return (
+                  <li key={u.username}>
+                    <Typography variant="body2">{u.username} — {roleLabels[u.role] || u.role}</Typography>
+                  </li>
+                );
+              })}
             </Box>
           )}
         </CardContent>

@@ -161,6 +161,8 @@ app.use('/api/rental-contracts', require('./routes/rental-contracts'));
 app.use('/api/rental-payments', require('./routes/rental-payments'));
 app.use('/api/rental-management', require('./routes/rental-management'));
 app.use('/api/rental-accounting', require('./routes/rental-accounting'));
+// Home Services Accounting System
+app.use('/api/home-service', require('./routes/home-service'));
 
 
 // Error handling middleware

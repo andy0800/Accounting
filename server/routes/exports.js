@@ -826,5 +826,231 @@ router.get('/rental-accounting', async (req, res) => {
   }
 });
 
+// ==================== HOME SERVICE EXPORTS ====================
+
+const HSInvoice = require('../models/HSInvoice');
+const HSTransaction = require('../models/HSTransaction');
+const HSAccount = require('../models/HSAccount');
+
+// Export Home Service Invoices
+router.get('/home-service/invoices', async (req, res) => {
+  try {
+    const { type, status = 'active' } = req.query;
+    const filters = { status };
+    if (type && type !== 'all') {
+      filters.type = type;
+    }
+
+    const invoices = await HSInvoice.find(filters)
+      .populate('createdBy', 'username')
+      .sort({ date: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('فواتير الخدمات المنزلية');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 15 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 15 },
+      { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+      { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 18 },
+      { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 15 },
+      { header: bilingualHeader('التفاصيل', 'Details'), key: 'details', width: 30 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 12 },
+      { header: bilingualHeader('تم التعديل', 'Edited'), key: 'isEdited', width: 12 },
+      { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 18 },
+      { header: bilingualHeader('تاريخ الإنشاء', 'Created At'), key: 'createdAt', width: 18 },
+    ];
+
+    worksheet.getColumn('value').numFmt = '#,##0.000';
+
+    const typeLabels = {
+      income: 'فاتورة دخل / Income',
+      spending: 'إيصال صرف / Spending',
+    };
+
+    const statusLabels = {
+      active: 'نشط / Active',
+      deleted: 'محذوف / Deleted',
+    };
+
+    invoices.forEach((invoice) => {
+      worksheet.addRow({
+        reference: invoice.referenceNumber,
+        type: typeLabels[invoice.type] || invoice.type,
+        name: invoice.name,
+        value: invoice.value,
+        date: formatDate(invoice.date),
+        details: invoice.details || '',
+        status: statusLabels[invoice.status] || invoice.status,
+        isEdited: invoice.isEdited ? 'نعم / Yes' : 'لا / No',
+        createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+        createdAt: formatDate(invoice.createdAt),
+      });
+    });
+
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=home-service-invoices-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير الفواتير', error: error.message });
+  }
+});
+
+// Export Home Service Deleted Invoices
+router.get('/home-service/deleted', async (req, res) => {
+  try {
+    const invoices = await HSInvoice.find({ status: 'deleted' })
+      .populate('createdBy', 'username')
+      .populate('deletedBy', 'username')
+      .sort({ deletedAt: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('الفواتير المحذوفة');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 15 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 15 },
+      { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+      { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 18 },
+      { header: bilingualHeader('تاريخ الفاتورة', 'Invoice Date'), key: 'date', width: 15 },
+      { header: bilingualHeader('التفاصيل', 'Details'), key: 'details', width: 30 },
+      { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 18 },
+      { header: bilingualHeader('حذفها', 'Deleted By'), key: 'deletedBy', width: 18 },
+      { header: bilingualHeader('تاريخ الحذف', 'Deleted At'), key: 'deletedAt', width: 18 },
+    ];
+
+    worksheet.getColumn('value').numFmt = '#,##0.000';
+
+    const typeLabels = {
+      income: 'فاتورة دخل / Income',
+      spending: 'إيصال صرف / Spending',
+    };
+
+    invoices.forEach((invoice) => {
+      worksheet.addRow({
+        reference: invoice.referenceNumber,
+        type: typeLabels[invoice.type] || invoice.type,
+        name: invoice.name,
+        value: invoice.value,
+        date: formatDate(invoice.date),
+        details: invoice.details || '',
+        createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+        deletedBy: invoice.deletedBy ? invoice.deletedBy.username : '',
+        deletedAt: formatDate(invoice.deletedAt),
+      });
+    });
+
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=home-service-deleted-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير الفواتير المحذوفة', error: error.message });
+  }
+});
+
+// Export Home Service Accounting
+router.get('/home-service/accounting', async (req, res) => {
+  try {
+    const account = await HSAccount.getAccount();
+    const transactions = await HSTransaction.find()
+      .populate('performedBy', 'username')
+      .sort({ date: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // Summary sheet
+    const summarySheet = workbook.addWorksheet('ملخص المحاسبة');
+    summarySheet.addRow([bilingualHeader('ملخص المحاسبة', 'Accounting Summary')]);
+    summarySheet.addRow([]);
+    summarySheet.addRow([bilingualHeader('رصيد التمويل', 'Funding Credit'), account.fundingCredit]);
+    summarySheet.addRow([bilingualHeader('أرباح الدخل', 'Income Profit'), account.incomeProfit]);
+    summarySheet.addRow([]);
+    summarySheet.addRow([bilingualHeader('تاريخ التصدير', 'Export Date'), formatDate(new Date())]);
+    
+    summarySheet.getRow(1).font = { bold: true, size: 14 };
+    summarySheet.getColumn(2).numFmt = '#,##0.000';
+
+    // Transactions sheet
+    const transSheet = workbook.addWorksheet('سجل المعاملات');
+    transSheet.columns = [
+      { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 18 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 20 },
+      { header: bilingualHeader('الفئة', 'Category'), key: 'category', width: 15 },
+      { header: bilingualHeader('المبلغ', 'Amount'), key: 'amount', width: 18 },
+      { header: bilingualHeader('الرصيد بعد', 'Balance After'), key: 'balanceAfter', width: 18 },
+      { header: bilingualHeader('رقم الفاتورة', 'Invoice Ref'), key: 'invoiceRef', width: 15 },
+      { header: bilingualHeader('الوصف', 'Description'), key: 'description', width: 35 },
+      { header: bilingualHeader('بواسطة', 'By'), key: 'performedBy', width: 18 },
+    ];
+
+    transSheet.getColumn('amount').numFmt = '#,##0.000';
+    transSheet.getColumn('balanceAfter').numFmt = '#,##0.000';
+
+    const typeLabels = {
+      add_funds: 'إضافة رصيد / Add Funds',
+      income: 'دخل / Income',
+      spending: 'صرف / Spending',
+      income_reversal: 'عكس دخل / Income Reversal',
+      spending_reversal: 'عكس صرف / Spending Reversal',
+      income_adjustment: 'تعديل دخل / Income Adjustment',
+      spending_adjustment: 'تعديل صرف / Spending Adjustment',
+    };
+
+    const categoryLabels = {
+      funding: 'تمويل / Funding',
+      income: 'دخل / Income',
+    };
+
+    transactions.forEach((trans) => {
+      transSheet.addRow({
+        date: formatDate(trans.date),
+        type: typeLabels[trans.type] || trans.type,
+        category: categoryLabels[trans.category] || trans.category,
+        amount: trans.amount,
+        balanceAfter: trans.balanceAfter,
+        invoiceRef: trans.invoiceRef || '',
+        description: trans.description || '',
+        performedBy: trans.performedBy ? trans.performedBy.username : '',
+      });
+    });
+
+    // Style header row
+    const headerRow = transSheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=home-service-accounting-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير المحاسبة', error: error.message });
+  }
+});
+
 
 module.exports = router; 
