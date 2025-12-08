@@ -888,7 +888,6 @@ router.get('/home-service/invoices', async (req, res) => {
       });
     });
 
-    // Style header row
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true };
     headerRow.fill = {
@@ -950,7 +949,6 @@ router.get('/home-service/deleted', async (req, res) => {
       });
     });
 
-    // Style header row
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true };
     headerRow.fill = {
@@ -978,7 +976,6 @@ router.get('/home-service/accounting', async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     
-    // Summary sheet
     const summarySheet = workbook.addWorksheet('ملخص المحاسبة');
     summarySheet.addRow([bilingualHeader('ملخص المحاسبة', 'Accounting Summary')]);
     summarySheet.addRow([]);
@@ -990,7 +987,6 @@ router.get('/home-service/accounting', async (req, res) => {
     summarySheet.getRow(1).font = { bold: true, size: 14 };
     summarySheet.getColumn(2).numFmt = '#,##0.000';
 
-    // Transactions sheet
     const transSheet = workbook.addWorksheet('سجل المعاملات');
     transSheet.columns = [
       { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 18 },
@@ -1034,7 +1030,6 @@ router.get('/home-service/accounting', async (req, res) => {
       });
     });
 
-    // Style header row
     const headerRow = transSheet.getRow(1);
     headerRow.font = { bold: true };
     headerRow.fill = {

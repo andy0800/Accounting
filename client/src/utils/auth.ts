@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'secretary';
+export type UserRole = 'admin' | 'secretary' | 'home_service_user';
 
 const TOKEN_KEY = 'auth_token';
 const ROLE_KEY = 'auth_role';
