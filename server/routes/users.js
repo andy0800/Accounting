@@ -34,7 +34,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 	try {
 		const { username, password, role } = req.body;
 		if (!username || !password || !role) return res.status(400).json({ message: 'حقول مفقودة' });
-		if (!['admin', 'secretary'].includes(role)) return res.status(400).json({ message: 'دور غير صالح' });
+		if (!['admin', 'secretary', 'home_service_user'].includes(role)) return res.status(400).json({ message: 'دور غير صالح' });
 		const exists = await User.findOne({ username: username.toLowerCase() });
 		if (exists) return res.status(400).json({ message: 'اسم المستخدم مستخدم بالفعل' });
 		const passwordHash = await bcrypt.hash(password, 10);
