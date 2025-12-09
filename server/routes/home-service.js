@@ -552,8 +552,8 @@ router.get('/accounting', async (req, res) => {
   try {
     const account = await HSAccount.getAccount();
     
-    // Get transaction history grouped by category
-    const [fundingTransactions, incomeTransactions] = await Promise.all([
+    // Get transaction history grouped by category and calculate total spendings
+    const [fundingTransactions, incomeTransactions, spendingsAggregation] = await Promise.all([
       HSTransaction.find({ category: 'funding' })
         .sort({ date: -1 })
         .limit(100)
@@ -562,11 +562,20 @@ router.get('/accounting', async (req, res) => {
         .sort({ date: -1 })
         .limit(100)
         .populate('performedBy', 'username'),
+      // Calculate total spendings from all active spending invoices
+      HSInvoice.aggregate([
+        { $match: { type: 'spending', status: 'active' } },
+        { $group: { _id: null, total: { $sum: '$value' } } },
+      ]),
     ]);
+    
+    // Extract total spendings value
+    const totalSpendings = spendingsAggregation.length > 0 ? spendingsAggregation[0].total : 0;
     
     res.json({
       fundingCredit: account.fundingCredit,
       incomeProfit: account.incomeProfit,
+      totalSpendings,
       fundingTransactions,
       incomeTransactions,
     });

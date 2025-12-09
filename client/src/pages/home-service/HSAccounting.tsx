@@ -28,6 +28,7 @@ import {
 import {
   AccountBalance as FundingIcon,
   TrendingUp as IncomeIcon,
+  TrendingDown as SpendingIcon,
   Add as AddIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
@@ -50,6 +51,7 @@ interface Transaction {
 interface AccountingData {
   fundingCredit: number;
   incomeProfit: number;
+  totalSpendings: number;
   fundingTransactions: Transaction[];
   incomeTransactions: Transaction[];
 }
@@ -244,6 +246,31 @@ const HSAccounting: React.FC = () => {
                 {data.incomeProfit.toLocaleString('en-US', { minimumFractionDigits: 3 })}
               </Typography>
               <Typography variant="h6">د.ك</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Total Spendings Card - Full Width */}
+        <Grid item xs={12}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #c62828 0%, #ef5350 100%)',
+              color: 'white',
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'scale(1.01)' },
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <SpendingIcon sx={{ fontSize: 48, mr: 1 }} />
+                  <Typography variant="h5">إجمالي المصروفات</Typography>
+                </Box>
+                <Typography variant="h2" fontWeight="bold">
+                  {data.totalSpendings.toLocaleString('en-US', { minimumFractionDigits: 3 })}
+                </Typography>
+                <Typography variant="h6">د.ك</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
