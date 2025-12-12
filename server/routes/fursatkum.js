@@ -33,6 +33,9 @@ function requireAdmin(req, res, next) {
 router.use(requireAuth);
 router.use(requireAdmin); // Admin-only system
 
+// Helper to extract user id from JWT payload
+const getUserId = (req) => req.user?.userId || req.user?.sub || req.user?.id;
+
 // ==================== FILE UPLOAD ====================
 
 const uploadDir = path.join(__dirname, '../uploads/fursatkum');
@@ -246,7 +249,7 @@ router.post('/invoices', upload.single('document'), async (req, res) => {
       value: numValue,
       date: new Date(date),
       details,
-      createdBy: req.user.userId,
+      createdBy: getUserId(req),
     };
 
     if (req.file) {
@@ -270,7 +273,7 @@ router.post('/invoices', upload.single('document'), async (req, res) => {
       invoiceId: invoice._id,
       invoiceRef: referenceNumber,
       description: `${type === 'income' ? 'فاتورة دخل' : 'إيصال صرف'}: ${name}`,
-      performedBy: req.user.userId,
+      performedBy: getUserId(req),
     });
 
     res.status(201).json({ message: 'تم إنشاء الفاتورة بنجاح', invoice });
@@ -316,7 +319,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
           newValue,
           reason,
           editedAt: new Date(),
-          editedBy: req.user.userId,
+          editedBy: getUserId(req),
         });
 
         let balanceAfter;
@@ -338,7 +341,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
           invoiceRef: invoice.referenceNumber,
           description: `تعديل ${invoice.type === 'income' ? 'فاتورة دخل' : 'إيصال صرف'}: ${invoice.name}`,
           reason,
-          performedBy: req.user.userId,
+          performedBy: getUserId(req),
         });
 
         invoice.value = newValue;
@@ -352,7 +355,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
         newValue: name,
         reason,
         editedAt: new Date(),
-        editedBy: req.user.userId,
+        editedBy: getUserId(req),
       });
       invoice.name = name;
     }
@@ -366,7 +369,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
           newValue: newDate,
           reason,
           editedAt: new Date(),
-          editedBy: req.user.userId,
+        editedBy: getUserId(req),
         });
         invoice.date = newDate;
       }
@@ -379,7 +382,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
         newValue: details,
         reason,
         editedAt: new Date(),
-        editedBy: req.user.userId,
+        editedBy: getUserId(req),
       });
       invoice.details = details;
     }
@@ -391,7 +394,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
         newValue: bankReference,
         reason,
         editedAt: new Date(),
-        editedBy: req.user.userId,
+        editedBy: getUserId(req),
       });
       invoice.bankReference = bankReference;
     }
@@ -407,7 +410,7 @@ router.put('/invoices/:id', upload.single('document'), async (req, res) => {
         newValue: req.file.originalname,
         reason,
         editedAt: new Date(),
-        editedBy: req.user.userId,
+        editedBy: getUserId(req),
       });
       invoice.document = {
         name: req.file.originalname,
@@ -459,12 +462,12 @@ router.delete('/invoices/:id', async (req, res) => {
       invoiceRef: invoice.referenceNumber,
       description: `حذف ${invoice.type === 'income' ? 'فاتورة دخل' : 'إيصال صرف'}: ${invoice.name}`,
       reason,
-      performedBy: req.user.userId,
+      performedBy: getUserId(req),
     });
 
     invoice.status = 'deleted';
     invoice.deletedAt = new Date();
-    invoice.deletedBy = req.user.userId;
+    invoice.deletedBy = getUserId(req);
     invoice.deleteReason = reason;
     await invoice.save();
 
