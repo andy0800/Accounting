@@ -45,6 +45,8 @@ const Navigation: React.FC = () => {
   const location = useLocation();
 
   const role = auth.getRole();
+  const isAdmin = role === 'admin';
+  const isHomeServiceUser = role === 'home_service_user';
 
   const menuItems = [
     { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/', section: 'main', roles: ['admin'] },
@@ -100,7 +102,7 @@ const Navigation: React.FC = () => {
     return 'visa';
   };
 
-  const selectedSystem = role === 'admin' ? getSystemFromPath(location.pathname) : null;
+  const selectedSystem = isAdmin ? getSystemFromPath(location.pathname) : null;
 
   const handleSystemChange = (value: string) => {
     const target = systemOptions.find((opt) => opt.value === value);
@@ -135,10 +137,10 @@ const Navigation: React.FC = () => {
 
   // Determine what title to show based on role
   const getSystemTitle = () => {
-    if (role === 'home_service_user') {
+    if (isHomeServiceUser) {
       return 'نظام محاسبة الخدمات المنزلية';
     }
-    if (role === 'admin') {
+    if (isAdmin) {
       const currentLabel = selectedSystem ? systemOptions.find((opt) => opt.value === selectedSystem)?.label : null;
       return currentLabel || 'اختر النظام';
     }
@@ -146,7 +148,7 @@ const Navigation: React.FC = () => {
   };
 
   // For home_service_user, only show home service menu
-  const isHomeServiceOnly = role === 'home_service_user';
+  const isHomeServiceOnly = isHomeServiceUser;
 
   const drawer = (
     <Box>
@@ -158,7 +160,7 @@ const Navigation: React.FC = () => {
       <Divider />
       
       {/* Admin: system selector + filtered menus; Non-admin: keep existing visibility */}
-      {role === 'admin' ? (
+      {isAdmin ? (
         <>
           <Box sx={{ px: 2, pb: 1 }}>
             <FormControl fullWidth size="small">
@@ -252,7 +254,7 @@ const Navigation: React.FC = () => {
           )}
           
           {/* Home Service menu items - shown for admin and home_service_user */}
-          {(role === 'admin' || role === 'home_service_user') && (
+          {(isAdmin || isHomeServiceUser) && (
             <>
               <List>
                 <ListItemText
