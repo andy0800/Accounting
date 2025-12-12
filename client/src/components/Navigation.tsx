@@ -288,7 +288,7 @@ const Navigation: React.FC = () => {
           )}
 
           {/* Fursatkum Accounting System - admin only */}
-          {role === 'admin' && (
+          {isAdmin && (
             <>
               <List>
                 <ListItemText
