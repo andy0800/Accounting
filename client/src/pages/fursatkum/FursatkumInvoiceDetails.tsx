@@ -190,6 +190,10 @@ const FursatkumInvoiceDetails: React.FC = () => {
               <Typography fontWeight="bold">{invoice.value.toLocaleString('en-US', { minimumFractionDigits: 3 })} د.ك</Typography>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="subtitle2">أنشأها</Typography>
+              <Typography>{invoice.createdBy?.username || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2">التاريخ</Typography>
               <Typography>{new Date(invoice.date).toLocaleDateString('ar-KW')}</Typography>
             </Grid>

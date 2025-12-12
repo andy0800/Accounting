@@ -263,6 +263,7 @@ const FursatkumInvoices: React.FC = () => {
                       <TableCell>النوع</TableCell>
                       <TableCell>الدفة</TableCell>
                       <TableCell>القيمة</TableCell>
+                      <TableCell>أنشأها</TableCell>
                       <TableCell>التاريخ</TableCell>
                       <TableCell>الحالة</TableCell>
                       <TableCell>المحرر</TableCell>
@@ -285,6 +286,7 @@ const FursatkumInvoices: React.FC = () => {
                           <TableCell sx={{ fontWeight: 'bold' }}>
                             {inv.value.toLocaleString('en-US', { minimumFractionDigits: 3 })} د.ك
                           </TableCell>
+                          <TableCell>{inv.createdBy?.username || '-'}</TableCell>
                           <TableCell>{new Date(inv.date).toLocaleDateString('ar-KW')}</TableCell>
                           <TableCell>
                             <Chip label={statusLabels[inv.status]} color={statusColor[inv.status]} size="small" />
