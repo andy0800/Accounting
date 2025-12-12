@@ -165,7 +165,6 @@ const Navigation: React.FC = () => {
               <InputLabel id="system-select-label">اختر النظام</InputLabel>
               <TextField
                 select
-                labelId="system-select-label"
                 label="اختر النظام"
                 value={selectedSystem || 'visa'}
                 onChange={(e) => handleSystemChange(e.target.value)}
