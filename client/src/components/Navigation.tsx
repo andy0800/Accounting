@@ -11,6 +11,10 @@ import {
   IconButton,
   Box,
   Divider,
+  TextField,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -82,6 +86,43 @@ const Navigation: React.FC = () => {
     { text: 'محاسبة فرصتكم', icon: <WalletIcon />, path: '/fursatkum/accounting', roles: ['admin'] },
   ];
 
+  const systemOptions = [
+    { value: 'visa', label: 'نظام التأشيرات', path: '/' },
+    { value: 'renting', label: 'نظام التأجير', path: '/renting' },
+    { value: 'home', label: 'نظام محاسبة الخدمات المنزلية', path: '/home-service' },
+    { value: 'fursatkum', label: 'نظام محاسبة فرصتكم', path: '/fursatkum' },
+  ];
+
+  const getSystemFromPath = (pathname: string) => {
+    if (pathname.startsWith('/renting')) return 'renting';
+    if (pathname.startsWith('/home-service')) return 'home';
+    if (pathname.startsWith('/fursatkum')) return 'fursatkum';
+    return 'visa';
+  };
+
+  const selectedSystem = role === 'admin' ? getSystemFromPath(location.pathname) : null;
+
+  const handleSystemChange = (value: string) => {
+    const target = systemOptions.find((opt) => opt.value === value);
+    if (target) {
+      handleNavigation(target.path);
+    }
+  };
+
+  const getMenuBySystem = (system: string) => {
+    switch (system) {
+      case 'renting':
+        return rentingMenuItems;
+      case 'home':
+        return homeServiceMenuItems;
+      case 'fursatkum':
+        return fursatkumMenuItems;
+      case 'visa':
+      default:
+        return menuItems;
+    }
+  };
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -96,6 +137,10 @@ const Navigation: React.FC = () => {
   const getSystemTitle = () => {
     if (role === 'home_service_user') {
       return 'نظام محاسبة الخدمات المنزلية';
+    }
+    if (role === 'admin') {
+      const currentLabel = selectedSystem ? systemOptions.find((opt) => opt.value === selectedSystem)?.label : null;
+      return currentLabel || 'اختر النظام';
     }
     return 'نظام التأشيرات';
   };
@@ -112,120 +157,168 @@ const Navigation: React.FC = () => {
       </Toolbar>
       <Divider />
       
-      {/* Main menu items - hidden for home_service_user */}
-      {!isHomeServiceOnly && (
+      {/* Admin: system selector + filtered menus; Non-admin: keep existing visibility */}
+      {role === 'admin' ? (
         <>
-          <List>
-            {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => handleNavigation(item.path)}
-                selected={location.pathname === item.path}
+          <Box sx={{ px: 2, pb: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="system-select-label">اختر النظام</InputLabel>
+              <TextField
+                select
+                labelId="system-select-label"
+                label="اختر النظام"
+                value={selectedSystem || 'visa'}
+                onChange={(e) => handleSystemChange(e.target.value)}
+                fullWidth
+                size="small"
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
+                {systemOptions.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormControl>
+          </Box>
+          <Divider />
+          <List>
+            {getMenuBySystem(selectedSystem || 'visa')
+              .filter(mi => !role || mi.roles?.includes(role))
+              .map((item) => (
+                <ListItem
+                  button
+                  key={item.text}
+                  onClick={() => handleNavigation(item.path)}
+                  selected={
+                    location.pathname === item.path ||
+                    location.pathname + location.search === item.path
+                  }
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItem>
+              ))}
           </List>
           <Divider />
         </>
-      )}
-      
-      {/* Renting menu items - hidden for home_service_user */}
-      {!isHomeServiceOnly && (
+      ) : (
         <>
-          <List>
-            <ListItemText
-              primary="نظام التأجير"
-              primaryTypographyProps={{
-                variant: 'subtitle2',
-                color: 'primary.main',
-                fontWeight: 'bold',
-                sx: { textAlign: 'center' },
-              }}
-            />
-            {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => handleNavigation(item.path)}
-                selected={location.pathname === item.path}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-          <Divider />
-        </>
-      )}
-      
-      {/* Home Service menu items - shown for admin and home_service_user */}
-      {(role === 'admin' || role === 'home_service_user') && (
-        <>
-          <List>
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                  <HomeWorkIcon fontSize="small" color="success" />
-                  <span>نظام محاسبة الخدمات المنزلية</span>
-                </Box>
-              }
-              primaryTypographyProps={{
-                variant: 'subtitle2',
-                color: 'success.main',
-                fontWeight: 'bold',
-                sx: { textAlign: 'center' },
-              }}
-            />
-            {homeServiceMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => handleNavigation(item.path)}
-                selected={location.pathname === item.path || location.pathname + location.search === item.path}
-              >
-                <ListItemIcon sx={{ color: 'success.main' }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-          <Divider />
-        </>
-      )}
+          {/* Main menu items - hidden for home_service_user */}
+          {!isHomeServiceOnly && (
+            <>
+              <List>
+                {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
+          
+          {/* Renting menu items - hidden for home_service_user */}
+          {!isHomeServiceOnly && (
+            <>
+              <List>
+                <ListItemText
+                  primary="نظام التأجير"
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    sx: { textAlign: 'center' },
+                  }}
+                />
+                {rentingMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
+          
+          {/* Home Service menu items - shown for admin and home_service_user */}
+          {(role === 'admin' || role === 'home_service_user') && (
+            <>
+              <List>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <HomeWorkIcon fontSize="small" color="success" />
+                      <span>نظام محاسبة الخدمات المنزلية</span>
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    color: 'success.main',
+                    fontWeight: 'bold',
+                    sx: { textAlign: 'center' },
+                  }}
+                />
+                {homeServiceMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path || location.pathname + location.search === item.path}
+                  >
+                    <ListItemIcon sx={{ color: 'success.main' }}>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
 
-      {/* Fursatkum Accounting System - admin only */}
-      {role === 'admin' && (
-        <>
-          <List>
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                  <WalletIcon fontSize="small" color="primary" />
-                  <span>نظام محاسبة فرصتكم</span>
-                </Box>
-              }
-              primaryTypographyProps={{
-                variant: 'subtitle2',
-                color: 'primary.main',
-                fontWeight: 'bold',
-                sx: { textAlign: 'center' },
-              }}
-            />
-            {fursatkumMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
-              <ListItem
-                button
-                key={item.text}
-                onClick={() => handleNavigation(item.path)}
-                selected={location.pathname === item.path || location.pathname + location.search === item.path}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-          <Divider />
+          {/* Fursatkum Accounting System - admin only */}
+          {role === 'admin' && (
+            <>
+              <List>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <WalletIcon fontSize="small" color="primary" />
+                      <span>نظام محاسبة فرصتكم</span>
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    sx: { textAlign: 'center' },
+                  }}
+                />
+                {fursatkumMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path || location.pathname + location.search === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
         </>
       )}
       
