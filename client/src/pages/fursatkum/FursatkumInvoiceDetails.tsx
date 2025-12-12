@@ -29,6 +29,7 @@ interface Invoice {
   details?: string;
   status: 'active' | 'deleted';
   isEdited?: boolean;
+  createdBy?: { username: string };
   editHistory?: Array<{
     field: string;
     oldValue: any;
