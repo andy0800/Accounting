@@ -259,6 +259,7 @@ const FursatkumInvoices: React.FC = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell>الاسم</TableCell>
                       <TableCell>المرجع</TableCell>
                       <TableCell>النوع</TableCell>
                       <TableCell>الدفة</TableCell>
@@ -280,6 +281,7 @@ const FursatkumInvoices: React.FC = () => {
                     ) : (
                       data.map((inv) => (
                         <TableRow key={inv._id} hover>
+                          <TableCell sx={{ fontWeight: 600 }}>{inv.name}</TableCell>
                           <TableCell>{inv.referenceNumber}</TableCell>
                           <TableCell>{typeLabels[inv.type]}</TableCell>
                           <TableCell>{ledgerLabels[inv.ledger]}</TableCell>
