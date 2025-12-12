@@ -164,7 +164,6 @@ const Navigation: React.FC = () => {
         <>
           <Box sx={{ px: 2, pb: 1 }}>
             <FormControl fullWidth size="small">
-              <InputLabel id="system-select-label">اختر النظام</InputLabel>
               <TextField
                 select
                 label="اختر النظام"
