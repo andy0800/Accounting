@@ -27,6 +27,7 @@ import {
   Receipt as ReceiptIcon,
   Delete as DeleteIcon,
   HomeWork as HomeWorkIcon,
+  AccountBalanceWallet as WalletIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CacheClearButton from './CacheClearButton';
@@ -70,6 +71,15 @@ const Navigation: React.FC = () => {
     { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/home-service/invoices/new?type=spending', roles: ['admin', 'home_service_user'] },
     { text: 'المحذوفات', icon: <DeleteIcon />, path: '/home-service/deleted', roles: ['admin', 'home_service_user'] },
     { text: 'المحاسبة', icon: <AccountIcon />, path: '/home-service/accounting', roles: ['admin', 'home_service_user'] },
+  ];
+
+  const fursatkumMenuItems = [
+    { text: 'لوحة فرصتكم', icon: <DashboardIcon />, path: '/fursatkum', roles: ['admin'] },
+    { text: 'فواتير فرصتكم', icon: <ReceiptIcon />, path: '/fursatkum/invoices', roles: ['admin'] },
+    { text: 'فاتورة دخل جديدة', icon: <AddIcon />, path: '/fursatkum/invoices/new?type=income', roles: ['admin'] },
+    { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/fursatkum/invoices/new?type=spending', roles: ['admin'] },
+    { text: 'المحذوفات', icon: <DeleteIcon />, path: '/fursatkum/deleted', roles: ['admin'] },
+    { text: 'محاسبة فرصتكم', icon: <WalletIcon />, path: '/fursatkum/accounting', roles: ['admin'] },
   ];
 
 
@@ -177,6 +187,40 @@ const Navigation: React.FC = () => {
                 selected={location.pathname === item.path || location.pathname + location.search === item.path}
               >
                 <ListItemIcon sx={{ color: 'success.main' }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+          <Divider />
+        </>
+      )}
+
+      {/* Fursatkum Accounting System - admin only */}
+      {role === 'admin' && (
+        <>
+          <List>
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                  <WalletIcon fontSize="small" color="primary" />
+                  <span>نظام محاسبة فرصتكم</span>
+                </Box>
+              }
+              primaryTypographyProps={{
+                variant: 'subtitle2',
+                color: 'primary.main',
+                fontWeight: 'bold',
+                sx: { textAlign: 'center' },
+              }}
+            />
+            {fursatkumMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                onClick={() => handleNavigation(item.path)}
+                selected={location.pathname === item.path || location.pathname + location.search === item.path}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItem>
             ))}

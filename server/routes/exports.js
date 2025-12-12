@@ -831,6 +831,9 @@ router.get('/rental-accounting', async (req, res) => {
 const HSInvoice = require('../models/HSInvoice');
 const HSTransaction = require('../models/HSTransaction');
 const HSAccount = require('../models/HSAccount');
+const FursatkumInvoice = require('../models/FursatkumInvoice');
+const FursatkumTransaction = require('../models/FursatkumTransaction');
+const FursatkumAccount = require('../models/FursatkumAccount');
 
 // Export Home Service Invoices
 router.get('/home-service/invoices', async (req, res) => {
@@ -1044,6 +1047,249 @@ router.get('/home-service/accounting', async (req, res) => {
     res.end();
   } catch (error) {
     res.status(500).json({ message: 'خطأ في تصدير المحاسبة', error: error.message });
+  }
+});
+
+// ==================== FURSATKUM ACCOUNTING EXPORTS ====================
+
+// Export Fursatkum Invoices
+router.get('/fursatkum/invoices', async (req, res) => {
+  try {
+    const { type, ledger, status = 'active' } = req.query;
+    const filters = { status };
+    if (type && type !== 'all') filters.type = type;
+    if (ledger && ledger !== 'all') filters.ledger = ledger;
+
+    const invoices = await FursatkumInvoice.find(filters)
+      .populate('createdBy', 'username')
+      .sort({ date: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('فواتير فرصتكم');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 16 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 14 },
+      { header: bilingualHeader('الدفة', 'Ledger'), key: 'ledger', width: 14 },
+      { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+      { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 16 },
+      { header: bilingualHeader('المرجع البنكي', 'Bank Ref'), key: 'bankRef', width: 18 },
+      { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 14 },
+      { header: bilingualHeader('التفاصيل', 'Details'), key: 'details', width: 32 },
+      { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 12 },
+      { header: bilingualHeader('تم التعديل', 'Edited'), key: 'isEdited', width: 12 },
+      { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 16 },
+    ];
+
+    worksheet.getColumn('value').numFmt = '#,##0.000';
+
+    const typeLabels = {
+      income: 'فاتورة دخل / Income',
+      spending: 'إيصال صرف / Spending',
+    };
+    const ledgerLabels = {
+      bank: 'حساب بنكي / Bank',
+      cash: 'صندوق نقدي / Cash',
+    };
+    const statusLabels = {
+      active: 'نشط / Active',
+      deleted: 'محذوف / Deleted',
+    };
+
+    invoices.forEach((invoice) => {
+      worksheet.addRow({
+        reference: invoice.referenceNumber,
+        type: typeLabels[invoice.type] || invoice.type,
+        ledger: ledgerLabels[invoice.ledger] || invoice.ledger,
+        name: invoice.name,
+        value: invoice.value,
+        bankRef: invoice.ledger === 'bank' ? (invoice.bankReference || '') : '',
+        date: formatDate(invoice.date),
+        details: invoice.details || '',
+        status: statusLabels[invoice.status] || invoice.status,
+        isEdited: invoice.isEdited ? 'نعم / Yes' : 'لا / No',
+        createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+      });
+    });
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=fursatkum-invoices-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير فواتير فرصتكم', error: error.message });
+  }
+});
+
+// Export Fursatkum Deleted Invoices
+router.get('/fursatkum/deleted', async (req, res) => {
+  try {
+    const invoices = await FursatkumInvoice.find({ status: 'deleted' })
+      .populate('createdBy', 'username')
+      .populate('deletedBy', 'username')
+      .sort({ deletedAt: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('الفواتير المحذوفة');
+
+    worksheet.columns = [
+      { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 16 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 14 },
+      { header: bilingualHeader('الدفة', 'Ledger'), key: 'ledger', width: 14 },
+      { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+      { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 16 },
+      { header: bilingualHeader('المرجع البنكي', 'Bank Ref'), key: 'bankRef', width: 18 },
+      { header: bilingualHeader('تاريخ الفاتورة', 'Invoice Date'), key: 'date', width: 14 },
+      { header: bilingualHeader('سبب الحذف', 'Delete Reason'), key: 'reason', width: 28 },
+      { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 16 },
+      { header: bilingualHeader('حذفها', 'Deleted By'), key: 'deletedBy', width: 16 },
+      { header: bilingualHeader('تاريخ الحذف', 'Deleted At'), key: 'deletedAt', width: 16 },
+    ];
+
+    worksheet.getColumn('value').numFmt = '#,##0.000';
+
+    const typeLabels = { income: 'فاتورة دخل / Income', spending: 'إيصال صرف / Spending' };
+    const ledgerLabels = { bank: 'حساب بنكي / Bank', cash: 'صندوق نقدي / Cash' };
+
+    invoices.forEach((invoice) => {
+      worksheet.addRow({
+        reference: invoice.referenceNumber,
+        type: typeLabels[invoice.type] || invoice.type,
+        ledger: ledgerLabels[invoice.ledger] || invoice.ledger,
+        name: invoice.name,
+        value: invoice.value,
+        bankRef: invoice.ledger === 'bank' ? (invoice.bankReference || '') : '',
+        date: formatDate(invoice.date),
+        reason: invoice.deleteReason || '',
+        createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+        deletedBy: invoice.deletedBy ? invoice.deletedBy.username : '',
+        deletedAt: formatDate(invoice.deletedAt),
+      });
+    });
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=fursatkum-deleted-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير الفواتير المحذوفة', error: error.message });
+  }
+});
+
+// Export Fursatkum Accounting Summary & Transactions
+router.get('/fursatkum/accounting', async (req, res) => {
+  try {
+    const account = await FursatkumAccount.getAccount();
+    const transactions = await FursatkumTransaction.find()
+      .populate('performedBy', 'username')
+      .sort({ date: -1 });
+
+    const [incomeAgg, spendingAgg] = await Promise.all([
+      FursatkumInvoice.aggregate([
+        { $match: { type: 'income', status: 'active' } },
+        { $group: { _id: null, total: { $sum: '$value' } } },
+      ]),
+      FursatkumInvoice.aggregate([
+        { $match: { type: 'spending', status: 'active' } },
+        { $group: { _id: null, total: { $sum: '$value' } } },
+      ]),
+    ]);
+
+    const totalIncome = incomeAgg.length ? incomeAgg[0].total : 0;
+    const totalSpendings = spendingAgg.length ? spendingAgg[0].total : 0;
+
+    const workbook = new ExcelJS.Workbook();
+
+    const summarySheet = workbook.addWorksheet('ملخص المحاسبة');
+    summarySheet.addRow([bilingualHeader('ملخص المحاسبة - فرصتكم', 'Fursatkum Accounting Summary')]);
+    summarySheet.addRow([]);
+    summarySheet.addRow([bilingualHeader('رصيد البنك', 'Bank Balance'), account.bankBalance]);
+    summarySheet.addRow([bilingualHeader('رصيد الصندوق', 'Cash Balance'), account.cashBalance]);
+    summarySheet.addRow([bilingualHeader('إجمالي الدخل', 'Total Income'), totalIncome]);
+    summarySheet.addRow([bilingualHeader('إجمالي المصروفات', 'Total Spendings'), totalSpendings]);
+    summarySheet.addRow([]);
+    summarySheet.addRow([bilingualHeader('البنك', 'Bank'), account.bankInfo.bankName]);
+    summarySheet.addRow([bilingualHeader('اسم الحساب', 'Account Name'), account.bankInfo.accountName]);
+    summarySheet.addRow([bilingualHeader('رقم الحساب', 'Account Number'), account.bankInfo.accountNumber]);
+    summarySheet.addRow([bilingualHeader('IBAN', 'IBAN'), account.bankInfo.iban]);
+    summarySheet.addRow([]);
+    summarySheet.addRow([bilingualHeader('تاريخ التصدير', 'Export Date'), formatDate(new Date())]);
+    summarySheet.getColumn(2).numFmt = '#,##0.000';
+    summarySheet.getRow(1).font = { bold: true, size: 14 };
+
+    const transSheet = workbook.addWorksheet('سجل المعاملات');
+    transSheet.columns = [
+      { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 18 },
+      { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 20 },
+      { header: bilingualHeader('الدفة', 'Ledger'), key: 'ledger', width: 14 },
+      { header: bilingualHeader('المبلغ', 'Amount'), key: 'amount', width: 16 },
+      { header: bilingualHeader('الرصيد بعد', 'Balance After'), key: 'balanceAfter', width: 16 },
+      { header: bilingualHeader('رقم الفاتورة', 'Invoice Ref'), key: 'invoiceRef', width: 16 },
+      { header: bilingualHeader('الوصف', 'Description'), key: 'description', width: 32 },
+      { header: bilingualHeader('السبب', 'Reason'), key: 'reason', width: 24 },
+      { header: bilingualHeader('بواسطة', 'By'), key: 'performedBy', width: 16 },
+    ];
+
+    transSheet.getColumn('amount').numFmt = '#,##0.000';
+    transSheet.getColumn('balanceAfter').numFmt = '#,##0.000';
+
+    const typeLabels = {
+      income: 'دخل / Income',
+      spending: 'صرف / Spending',
+      income_reversal: 'عكس دخل / Income Reversal',
+      spending_reversal: 'عكس صرف / Spending Reversal',
+      income_adjustment: 'تعديل دخل / Income Adjustment',
+      spending_adjustment: 'تعديل صرف / Spending Adjustment',
+    };
+    const ledgerLabels = {
+      bank: 'حساب بنكي / Bank',
+      cash: 'صندوق نقدي / Cash',
+    };
+
+    transactions.forEach((trans) => {
+      transSheet.addRow({
+        date: formatDate(trans.date),
+        type: typeLabels[trans.type] || trans.type,
+        ledger: ledgerLabels[trans.ledger] || trans.ledger,
+        amount: trans.amount,
+        balanceAfter: trans.balanceAfter,
+        invoiceRef: trans.invoiceRef || '',
+        description: trans.description || '',
+        reason: trans.reason || '',
+        performedBy: trans.performedBy ? trans.performedBy.username : '',
+      });
+    });
+
+    const headerRow = transSheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=fursatkum-accounting-${moment().format('YYYY-MM-DD')}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تصدير محاسبة فرصتكم', error: error.message });
   }
 });
 

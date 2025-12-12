@@ -163,6 +163,8 @@ app.use('/api/rental-management', require('./routes/rental-management'));
 app.use('/api/rental-accounting', require('./routes/rental-accounting'));
 // Home Services Accounting System
 app.use('/api/home-service', require('./routes/home-service'));
+// Fursatkum Accounting System (admin only)
+app.use('/api/fursatkum', require('./routes/fursatkum'));
 
 
 // Error handling middleware

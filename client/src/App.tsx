@@ -43,6 +43,13 @@ const HSNewInvoice = React.lazy(() => import('./pages/home-service/HSNewInvoice'
 const HSInvoiceDetails = React.lazy(() => import('./pages/home-service/HSInvoiceDetails'));
 const HSDeletedInvoices = React.lazy(() => import('./pages/home-service/HSDeletedInvoices'));
 const HSAccounting = React.lazy(() => import('./pages/home-service/HSAccounting'));
+// Fursatkum Accounting System (admin only)
+const FursatkumDashboard = React.lazy(() => import('./pages/fursatkum/FursatkumDashboard'));
+const FursatkumInvoices = React.lazy(() => import('./pages/fursatkum/FursatkumInvoices'));
+const FursatkumNewInvoice = React.lazy(() => import('./pages/fursatkum/FursatkumNewInvoice'));
+const FursatkumInvoiceDetails = React.lazy(() => import('./pages/fursatkum/FursatkumInvoiceDetails'));
+const FursatkumDeletedInvoices = React.lazy(() => import('./pages/fursatkum/FursatkumDeletedInvoices'));
+const FursatkumAccounting = React.lazy(() => import('./pages/fursatkum/FursatkumAccounting'));
 
 
 // Create rtl cache
@@ -325,6 +332,14 @@ function App() {
                     <Route path="/home-service/invoices/:id" element={protect(<HSInvoiceDetails />, '/home-service/invoices/:id')} />
                     <Route path="/home-service/deleted" element={protect(<HSDeletedInvoices />, '/home-service/deleted')} />
                     <Route path="/home-service/accounting" element={protect(<HSAccounting />, '/home-service/accounting')} />
+                    
+                    {/* Fursatkum Accounting System (admin only) */}
+                    <Route path="/fursatkum" element={protect(<FursatkumDashboard />, '/fursatkum')} />
+                    <Route path="/fursatkum/invoices" element={protect(<FursatkumInvoices />, '/fursatkum/invoices')} />
+                    <Route path="/fursatkum/invoices/new" element={protect(<FursatkumNewInvoice />, '/fursatkum/invoices/new')} />
+                    <Route path="/fursatkum/invoices/:id" element={protect(<FursatkumInvoiceDetails />, '/fursatkum/invoices/:id')} />
+                    <Route path="/fursatkum/deleted" element={protect(<FursatkumDeletedInvoices />, '/fursatkum/deleted')} />
+                    <Route path="/fursatkum/accounting" element={protect(<FursatkumAccounting />, '/fursatkum/accounting')} />
                     
                     {/* Fallback route for 404 errors */}
                     <Route path="*" element={
