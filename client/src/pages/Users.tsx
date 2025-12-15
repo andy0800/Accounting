@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, Card, CardContent, Container, Grid, TextField, Typography, Alert, MenuItem, CircularProgress } from '@mui/material';
 import apiClient from '../config/axios';
 
-interface UserRow { username: string; role: 'admin' | 'secretary' | 'home_service_user'; }
+interface UserRow { username: string; role: 'admin' | 'secretary' | 'home_service_user' | 'farwaniya1_user' | 'farwaniya2_user'; }
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -60,10 +60,12 @@ const Users: React.FC = () => {
                 <TextField fullWidth type="password" label="كلمة المرور" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
               </Grid>
               <Grid item xs={12} md={4}>
-                <TextField select fullWidth label="الدور" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                <TextField select fullWidth label="الدور" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRow['role'] })}>
                   <MenuItem value="secretary">سكرتير (Secretary)</MenuItem>
                   <MenuItem value="admin">مسؤول (Admin)</MenuItem>
                   <MenuItem value="home_service_user">مستخدم خدمات منزلية (Home Service)</MenuItem>
+                  <MenuItem value="farwaniya1_user">مستخدم مكتب الفروانية الأول</MenuItem>
+                  <MenuItem value="farwaniya2_user">مستخدم مكتب الفروانية الثاني</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12}>
@@ -90,6 +92,8 @@ const Users: React.FC = () => {
                   admin: 'مسؤول',
                   secretary: 'سكرتير',
                   home_service_user: 'مستخدم خدمات منزلية',
+                  farwaniya1_user: 'مستخدم مكتب الفروانية الأول',
+                  farwaniya2_user: 'مستخدم مكتب الفروانية الثاني',
                 };
                 return (
                   <li key={u.username}>
