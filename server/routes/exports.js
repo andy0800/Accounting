@@ -831,6 +831,12 @@ router.get('/rental-accounting', async (req, res) => {
 const HSInvoice = require('../models/HSInvoice');
 const HSTransaction = require('../models/HSTransaction');
 const HSAccount = require('../models/HSAccount');
+const FW1Invoice = require('../models/FW1Invoice');
+const FW1Transaction = require('../models/FW1Transaction');
+const FW1Account = require('../models/FW1Account');
+const FW2Invoice = require('../models/FW2Invoice');
+const FW2Transaction = require('../models/FW2Transaction');
+const FW2Account = require('../models/FW2Account');
 const FursatkumInvoice = require('../models/FursatkumInvoice');
 const FursatkumTransaction = require('../models/FursatkumTransaction');
 const FursatkumAccount = require('../models/FursatkumAccount');
@@ -1048,6 +1054,233 @@ router.get('/home-service/accounting', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'خطأ في تصدير المحاسبة', error: error.message });
   }
+});
+
+// ==================== FARWANIYA OFFICE ACCOUNTING EXPORTS ====================
+
+const farwaniyaExportFactory = ({
+  key,
+  invoiceModel,
+  transactionModel,
+  accountModel,
+  arabicName,
+}) => {
+  // Invoices
+  router.get(`/${key}/invoices`, async (req, res) => {
+    try {
+      const { type, status = 'active' } = req.query;
+      const filters = { status };
+      if (type && type !== 'all') filters.type = type;
+
+      const invoices = await invoiceModel.find(filters)
+        .populate('createdBy', 'username')
+        .sort({ date: -1 });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(`فواتير ${arabicName}`);
+
+      worksheet.columns = [
+        { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 15 },
+        { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 15 },
+        { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+        { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 18 },
+        { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 15 },
+        { header: bilingualHeader('التفاصيل', 'Details'), key: 'details', width: 30 },
+        { header: bilingualHeader('الحالة', 'Status'), key: 'status', width: 12 },
+        { header: bilingualHeader('تم التعديل', 'Edited'), key: 'isEdited', width: 12 },
+        { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 18 },
+      ];
+
+      worksheet.getColumn('value').numFmt = '#,##0.000';
+
+      const typeLabels = {
+        income: 'فاتورة دخل / Income',
+        spending: 'إيصال صرف / Spending',
+      };
+      const statusLabels = {
+        active: 'نشط / Active',
+        deleted: 'محذوف / Deleted',
+      };
+
+      invoices.forEach((invoice) => {
+        worksheet.addRow({
+          reference: invoice.referenceNumber,
+          type: typeLabels[invoice.type] || invoice.type,
+          name: invoice.name,
+          value: invoice.value,
+          date: formatDate(invoice.date),
+          details: invoice.details || '',
+          status: statusLabels[invoice.status] || invoice.status,
+          isEdited: invoice.isEdited ? 'نعم / Yes' : 'لا / No',
+          createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+        });
+      });
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${key}-invoices-${moment().format('YYYY-MM-DD')}.xlsx`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      res.status(500).json({ message: 'خطأ في تصدير الفواتير', error: error.message });
+    }
+  });
+
+  // Deleted invoices
+  router.get(`/${key}/deleted`, async (req, res) => {
+    try {
+      const invoices = await invoiceModel.find({ status: 'deleted' })
+        .populate('createdBy', 'username')
+        .populate('deletedBy', 'username')
+        .sort({ deletedAt: -1 });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('الفواتير المحذوفة');
+
+      worksheet.columns = [
+        { header: bilingualHeader('رقم المرجع', 'Reference'), key: 'reference', width: 15 },
+        { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 15 },
+        { header: bilingualHeader('الاسم', 'Name'), key: 'name', width: 25 },
+        { header: bilingualHeader('القيمة (د.ك)', 'Value (KWD)'), key: 'value', width: 18 },
+        { header: bilingualHeader('تاريخ الفاتورة', 'Invoice Date'), key: 'date', width: 15 },
+        { header: bilingualHeader('التفاصيل', 'Details'), key: 'details', width: 30 },
+        { header: bilingualHeader('أنشأها', 'Created By'), key: 'createdBy', width: 18 },
+        { header: bilingualHeader('حذفها', 'Deleted By'), key: 'deletedBy', width: 18 },
+        { header: bilingualHeader('تاريخ الحذف', 'Deleted At'), key: 'deletedAt', width: 18 },
+      ];
+
+      worksheet.getColumn('value').numFmt = '#,##0.000';
+
+      const typeLabels = {
+        income: 'فاتورة دخل / Income',
+        spending: 'إيصال صرف / Spending',
+      };
+
+      invoices.forEach((invoice) => {
+        worksheet.addRow({
+          reference: invoice.referenceNumber,
+          type: typeLabels[invoice.type] || invoice.type,
+          name: invoice.name,
+          value: invoice.value,
+          date: formatDate(invoice.date),
+          details: invoice.details || '',
+          createdBy: invoice.createdBy ? invoice.createdBy.username : '',
+          deletedBy: invoice.deletedBy ? invoice.deletedBy.username : '',
+          deletedAt: formatDate(invoice.deletedAt),
+        });
+      });
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${key}-deleted-${moment().format('YYYY-MM-DD')}.xlsx`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      res.status(500).json({ message: 'خطأ في تصدير الفواتير المحذوفة', error: error.message });
+    }
+  });
+
+  // Accounting summary
+  router.get(`/${key}/accounting`, async (req, res) => {
+    try {
+      const account = await accountModel.getAccount();
+      const transactions = await transactionModel.find()
+        .populate('performedBy', 'username')
+        .sort({ date: -1 });
+
+      const workbook = new ExcelJS.Workbook();
+
+      const summarySheet = workbook.addWorksheet('ملخص المحاسبة');
+      summarySheet.addRow([bilingualHeader('ملخص المحاسبة', 'Accounting Summary')]);
+      summarySheet.addRow([]);
+      summarySheet.addRow([bilingualHeader('الرصيد الحالي', 'Current Balance'), account.balance]);
+      summarySheet.addRow([bilingualHeader('إجمالي الدخل', 'Total Income'), account.incomeTotal]);
+      summarySheet.addRow([bilingualHeader('إجمالي المصروف', 'Total Spending'), account.spendingTotal]);
+      summarySheet.addRow([]);
+      summarySheet.addRow([bilingualHeader('تاريخ التصدير', 'Export Date'), formatDate(new Date())]);
+      summarySheet.getRow(1).font = { bold: true, size: 14 };
+      summarySheet.getColumn(2).numFmt = '#,##0.000';
+
+      const transSheet = workbook.addWorksheet('سجل المعاملات');
+      transSheet.columns = [
+        { header: bilingualHeader('التاريخ', 'Date'), key: 'date', width: 18 },
+        { header: bilingualHeader('النوع', 'Type'), key: 'type', width: 20 },
+        { header: bilingualHeader('المبلغ', 'Amount'), key: 'amount', width: 18 },
+        { header: bilingualHeader('الرصيد بعد', 'Balance After'), key: 'balanceAfter', width: 18 },
+        { header: bilingualHeader('رقم الفاتورة', 'Invoice Ref'), key: 'invoiceRef', width: 15 },
+        { header: bilingualHeader('الوصف', 'Description'), key: 'description', width: 35 },
+        { header: bilingualHeader('بواسطة', 'By'), key: 'performedBy', width: 18 },
+      ];
+      transSheet.getColumn('amount').numFmt = '#,##0.000';
+      transSheet.getColumn('balanceAfter').numFmt = '#,##0.000';
+
+      const typeLabels = {
+        income: 'دخل / Income',
+        spending: 'صرف / Spending',
+        income_reversal: 'عكس دخل / Income Reversal',
+        spending_reversal: 'عكس صرف / Spending Reversal',
+        income_adjustment: 'تعديل دخل / Income Adjustment',
+        spending_adjustment: 'تعديل صرف / Spending Adjustment',
+      };
+
+      transactions.forEach((trans) => {
+        transSheet.addRow({
+          date: formatDate(trans.date),
+          type: typeLabels[trans.type] || trans.type,
+          amount: trans.amount,
+          balanceAfter: trans.balanceAfter,
+          invoiceRef: trans.invoiceRef || '',
+          description: trans.description || '',
+          performedBy: trans.performedBy ? trans.performedBy.username : '',
+        });
+      });
+
+      const headerRow = transSheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${key}-accounting-${moment().format('YYYY-MM-DD')}.xlsx`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      res.status(500).json({ message: 'خطأ في تصدير المحاسبة', error: error.message });
+    }
+  });
+};
+
+farwaniyaExportFactory({
+  key: 'farwaniya1',
+  invoiceModel: FW1Invoice,
+  transactionModel: FW1Transaction,
+  accountModel: FW1Account,
+  arabicName: 'مكتب الفروانية الأول',
+});
+
+farwaniyaExportFactory({
+  key: 'farwaniya2',
+  invoiceModel: FW2Invoice,
+  transactionModel: FW2Transaction,
+  accountModel: FW2Account,
+  arabicName: 'مكتب الفروانية الثاني',
 });
 
 // ==================== FURSATKUM ACCOUNTING EXPORTS ====================

@@ -50,6 +50,19 @@ const FursatkumNewInvoice = React.lazy(() => import('./pages/fursatkum/Fursatkum
 const FursatkumInvoiceDetails = React.lazy(() => import('./pages/fursatkum/FursatkumInvoiceDetails'));
 const FursatkumDeletedInvoices = React.lazy(() => import('./pages/fursatkum/FursatkumDeletedInvoices'));
 const FursatkumAccounting = React.lazy(() => import('./pages/fursatkum/FursatkumAccounting'));
+// Farwaniya office systems
+const FW1Dashboard = React.lazy(() => import('./pages/farwaniya/FW1Dashboard'));
+const FW1Invoices = React.lazy(() => import('./pages/farwaniya/FW1Invoices'));
+const FW1NewInvoice = React.lazy(() => import('./pages/farwaniya/FW1NewInvoice'));
+const FW1InvoiceDetails = React.lazy(() => import('./pages/farwaniya/FW1InvoiceDetails'));
+const FW1DeletedInvoices = React.lazy(() => import('./pages/farwaniya/FW1DeletedInvoices'));
+const FW1Accounting = React.lazy(() => import('./pages/farwaniya/FW1Accounting'));
+const FW2Dashboard = React.lazy(() => import('./pages/farwaniya/FW2Dashboard'));
+const FW2Invoices = React.lazy(() => import('./pages/farwaniya/FW2Invoices'));
+const FW2NewInvoice = React.lazy(() => import('./pages/farwaniya/FW2NewInvoice'));
+const FW2InvoiceDetails = React.lazy(() => import('./pages/farwaniya/FW2InvoiceDetails'));
+const FW2DeletedInvoices = React.lazy(() => import('./pages/farwaniya/FW2DeletedInvoices'));
+const FW2Accounting = React.lazy(() => import('./pages/farwaniya/FW2Accounting'));
 
 
 // Create rtl cache
@@ -283,6 +296,14 @@ function App() {
       if (path.startsWith('/home-service')) return element;
       return <Navigate to="/home-service" replace />;
     }
+    if (role === 'farwaniya1_user') {
+      if (path.startsWith('/farwaniya1')) return element;
+      return <Navigate to="/farwaniya1" replace />;
+    }
+    if (role === 'farwaniya2_user') {
+      if (path.startsWith('/farwaniya2')) return element;
+      return <Navigate to="/farwaniya2" replace />;
+    }
     return <Navigate to="/login" replace />;
   };
 
@@ -340,6 +361,21 @@ function App() {
                     <Route path="/fursatkum/invoices/:id" element={protect(<FursatkumInvoiceDetails />, '/fursatkum/invoices/:id')} />
                     <Route path="/fursatkum/deleted" element={protect(<FursatkumDeletedInvoices />, '/fursatkum/deleted')} />
                     <Route path="/fursatkum/accounting" element={protect(<FursatkumAccounting />, '/fursatkum/accounting')} />
+
+                    {/* Farwaniya office systems */}
+                    <Route path="/farwaniya1" element={protect(<FW1Dashboard />, '/farwaniya1')} />
+                    <Route path="/farwaniya1/invoices" element={protect(<FW1Invoices />, '/farwaniya1/invoices')} />
+                    <Route path="/farwaniya1/invoices/new" element={protect(<FW1NewInvoice />, '/farwaniya1/invoices/new')} />
+                    <Route path="/farwaniya1/invoices/:id" element={protect(<FW1InvoiceDetails />, '/farwaniya1/invoices/:id')} />
+                    <Route path="/farwaniya1/deleted" element={protect(<FW1DeletedInvoices />, '/farwaniya1/deleted')} />
+                    <Route path="/farwaniya1/accounting" element={protect(<FW1Accounting />, '/farwaniya1/accounting')} />
+
+                    <Route path="/farwaniya2" element={protect(<FW2Dashboard />, '/farwaniya2')} />
+                    <Route path="/farwaniya2/invoices" element={protect(<FW2Invoices />, '/farwaniya2/invoices')} />
+                    <Route path="/farwaniya2/invoices/new" element={protect(<FW2NewInvoice />, '/farwaniya2/invoices/new')} />
+                    <Route path="/farwaniya2/invoices/:id" element={protect(<FW2InvoiceDetails />, '/farwaniya2/invoices/:id')} />
+                    <Route path="/farwaniya2/deleted" element={protect(<FW2DeletedInvoices />, '/farwaniya2/deleted')} />
+                    <Route path="/farwaniya2/accounting" element={protect(<FW2Accounting />, '/farwaniya2/accounting')} />
                     
                     {/* Fallback route for 404 errors */}
                     <Route path="*" element={

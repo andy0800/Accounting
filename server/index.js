@@ -165,6 +165,9 @@ app.use('/api/rental-accounting', require('./routes/rental-accounting'));
 app.use('/api/home-service', require('./routes/home-service'));
 // Fursatkum Accounting System (admin only)
 app.use('/api/fursatkum', require('./routes/fursatkum'));
+// Farwaniya office accounting systems
+app.use('/api/farwaniya1', require('./routes/farwaniya1'));
+app.use('/api/farwaniya2', require('./routes/farwaniya2'));
 
 
 // Error handling middleware

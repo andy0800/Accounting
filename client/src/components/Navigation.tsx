@@ -32,6 +32,7 @@ import {
   Delete as DeleteIcon,
   HomeWork as HomeWorkIcon,
   AccountBalanceWallet as WalletIcon,
+  Store as StoreIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CacheClearButton from './CacheClearButton';
@@ -47,6 +48,8 @@ const Navigation: React.FC = () => {
   const role = auth.getRole();
   const isAdmin = role === 'admin';
   const isHomeServiceUser = role === 'home_service_user';
+const isFarwaniya1User = role === 'farwaniya1_user';
+const isFarwaniya2User = role === 'farwaniya2_user';
 
   const menuItems = [
     { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/', section: 'main', roles: ['admin'] },
@@ -88,17 +91,39 @@ const Navigation: React.FC = () => {
     { text: 'محاسبة فرصتكم', icon: <WalletIcon />, path: '/fursatkum/accounting', roles: ['admin'] },
   ];
 
+const farwaniya1MenuItems = [
+  { text: 'لوحة الفروانية الأول', icon: <DashboardIcon />, path: '/farwaniya1', roles: ['admin', 'farwaniya1_user'] },
+  { text: 'فواتير الفروانية الأول', icon: <ReceiptIcon />, path: '/farwaniya1/invoices', roles: ['admin', 'farwaniya1_user'] },
+  { text: 'فاتورة دخل جديدة', icon: <AddIcon />, path: '/farwaniya1/invoices/new?type=income', roles: ['admin', 'farwaniya1_user'] },
+  { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/farwaniya1/invoices/new?type=spending', roles: ['admin', 'farwaniya1_user'] },
+  { text: 'المحذوفات', icon: <DeleteIcon />, path: '/farwaniya1/deleted', roles: ['admin', 'farwaniya1_user'] },
+  { text: 'المحاسبة', icon: <AccountIcon />, path: '/farwaniya1/accounting', roles: ['admin', 'farwaniya1_user'] },
+];
+
+const farwaniya2MenuItems = [
+  { text: 'لوحة الفروانية الثاني', icon: <DashboardIcon />, path: '/farwaniya2', roles: ['admin', 'farwaniya2_user'] },
+  { text: 'فواتير الفروانية الثاني', icon: <ReceiptIcon />, path: '/farwaniya2/invoices', roles: ['admin', 'farwaniya2_user'] },
+  { text: 'فاتورة دخل جديدة', icon: <AddIcon />, path: '/farwaniya2/invoices/new?type=income', roles: ['admin', 'farwaniya2_user'] },
+  { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/farwaniya2/invoices/new?type=spending', roles: ['admin', 'farwaniya2_user'] },
+  { text: 'المحذوفات', icon: <DeleteIcon />, path: '/farwaniya2/deleted', roles: ['admin', 'farwaniya2_user'] },
+  { text: 'المحاسبة', icon: <AccountIcon />, path: '/farwaniya2/accounting', roles: ['admin', 'farwaniya2_user'] },
+];
+
   const systemOptions = [
     { value: 'visa', label: 'نظام التأشيرات', path: '/' },
     { value: 'renting', label: 'نظام التأجير', path: '/renting' },
     { value: 'home', label: 'نظام محاسبة الخدمات المنزلية', path: '/home-service' },
-    { value: 'fursatkum', label: 'نظام محاسبة فرصتكم', path: '/fursatkum' },
+  { value: 'fursatkum', label: 'نظام محاسبة فرصتكم', path: '/fursatkum' },
+  { value: 'farwaniya1', label: 'نظام محاسبة مكتب الفروانية الأول', path: '/farwaniya1' },
+  { value: 'farwaniya2', label: 'نظام محاسبة مكتب الفروانية الثاني', path: '/farwaniya2' },
   ];
 
   const getSystemFromPath = (pathname: string) => {
     if (pathname.startsWith('/renting')) return 'renting';
     if (pathname.startsWith('/home-service')) return 'home';
     if (pathname.startsWith('/fursatkum')) return 'fursatkum';
+  if (pathname.startsWith('/farwaniya1')) return 'farwaniya1';
+  if (pathname.startsWith('/farwaniya2')) return 'farwaniya2';
     return 'visa';
   };
 
@@ -119,6 +144,10 @@ const Navigation: React.FC = () => {
         return homeServiceMenuItems;
       case 'fursatkum':
         return fursatkumMenuItems;
+    case 'farwaniya1':
+      return farwaniya1MenuItems;
+    case 'farwaniya2':
+      return farwaniya2MenuItems;
       case 'visa':
       default:
         return menuItems;
@@ -137,6 +166,12 @@ const Navigation: React.FC = () => {
 
   // Determine what title to show based on role
   const getSystemTitle = () => {
+    if (isFarwaniya1User) {
+      return 'نظام محاسبة مكتب الفروانية الأول';
+    }
+    if (isFarwaniya2User) {
+      return 'نظام محاسبة مكتب الفروانية الثاني';
+    }
     if (isHomeServiceUser) {
       return 'نظام محاسبة الخدمات المنزلية';
     }
@@ -147,8 +182,10 @@ const Navigation: React.FC = () => {
     return 'نظام التأشيرات';
   };
 
-  // For home_service_user, only show home service menu
+  // For constrained roles, limit menus
   const isHomeServiceOnly = isHomeServiceUser;
+  const isFarwaniya1Only = isFarwaniya1User;
+  const isFarwaniya2Only = isFarwaniya2User;
 
   const drawer = (
     <Box>
@@ -203,8 +240,8 @@ const Navigation: React.FC = () => {
         </>
       ) : (
         <>
-          {/* Main menu items - hidden for home_service_user */}
-          {!isHomeServiceOnly && (
+          {/* Main menu items - hidden for home_service_user or farwaniya users */}
+          {!(isHomeServiceOnly || isFarwaniya1Only || isFarwaniya2Only) && (
             <>
               <List>
                 {menuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
@@ -223,8 +260,8 @@ const Navigation: React.FC = () => {
             </>
           )}
           
-          {/* Renting menu items - hidden for home_service_user */}
-          {!isHomeServiceOnly && (
+          {/* Renting menu items - hidden for restricted roles */}
+          {!(isHomeServiceOnly || isFarwaniya1Only || isFarwaniya2Only) && (
             <>
               <List>
                 <ListItemText
@@ -253,7 +290,7 @@ const Navigation: React.FC = () => {
           )}
           
           {/* Home Service menu items - shown for admin and home_service_user */}
-          {(isAdmin || isHomeServiceUser) && (
+          {(isAdmin || isHomeServiceUser) && !isFarwaniya1Only && !isFarwaniya2Only && (
             <>
               <List>
                 <ListItemText
@@ -287,7 +324,7 @@ const Navigation: React.FC = () => {
           )}
 
           {/* Fursatkum Accounting System - admin only */}
-          {isAdmin && (
+          {isAdmin && !isFarwaniya1Only && !isFarwaniya2Only && (
             <>
               <List>
                 <ListItemText
@@ -305,6 +342,73 @@ const Navigation: React.FC = () => {
                   }}
                 />
                 {fursatkumMenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path || location.pathname + location.search === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
+
+          {/* Farwaniya systems */}
+          {(isAdmin || isFarwaniya1User) && !isHomeServiceOnly && !isFarwaniya2Only && (
+            <>
+              <List>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <StoreIcon fontSize="small" color="primary" />
+                      <span>مكتب الفروانية الأول</span>
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    sx: { textAlign: 'center' },
+                  }}
+                />
+                {farwaniya1MenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
+                  <ListItem
+                    button
+                    key={item.text}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={location.pathname === item.path || location.pathname + location.search === item.path}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItem>
+                ))}
+              </List>
+              <Divider />
+            </>
+          )}
+
+          {(isAdmin || isFarwaniya2User) && !isHomeServiceOnly && !isFarwaniya1Only && (
+            <>
+              <List>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <StoreIcon fontSize="small" color="secondary" />
+                      <span>مكتب الفروانية الثاني</span>
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    color: 'secondary.main',
+                    fontWeight: 'bold',
+                    sx: { textAlign: 'center' },
+                  }}
+                />
+                {farwaniya2MenuItems.filter(mi => !role || mi.roles?.includes(role)).map((item) => (
                   <ListItem
                     button
                     key={item.text}
