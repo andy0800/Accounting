@@ -1,4 +1,9 @@
-export type UserRole = 'admin' | 'secretary' | 'home_service_user';
+export type UserRole =
+  | 'admin'
+  | 'secretary'
+  | 'home_service_user'
+  | 'farwaniya1_user'
+  | 'farwaniya2_user';
 
 const TOKEN_KEY = 'auth_token';
 const ROLE_KEY = 'auth_role';
