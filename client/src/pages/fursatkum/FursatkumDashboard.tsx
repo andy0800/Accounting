@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Card, CardContent, CircularProgress, Grid, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Download as DownloadIcon } from '@mui/icons-material';
@@ -29,18 +29,47 @@ interface DashboardData {
   }>;
 }
 
+interface LoanSummary {
+  outstandingTotal: number;
+  activeCount: number;
+}
+
+interface SalarySummary {
+  netTotal: number;
+  grossTotal: number;
+}
+
 const FursatkumDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [outstandingLoans, setOutstandingLoans] = useState(0);
+  const [salaryTotal, setSalaryTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const monthStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get('/api/fursatkum/dashboard');
-      setData(response.data);
+      const [dashboardResp, loansResp, salariesResp] = await Promise.all([
+        apiClient.get('/api/fursatkum/dashboard'),
+        apiClient.get('/api/fursatkum/employee-loans/summary'),
+        apiClient.get('/api/fursatkum/salaries/summary', { params: { startDate: monthStart } }),
+      ]);
+      setData(dashboardResp.data);
+
+      const loanSummary = loansResp.data as LoanSummary;
+      setOutstandingLoans(loanSummary?.outstandingTotal || 0);
+
+      const salarySummary = salariesResp.data as SalarySummary;
+      setSalaryTotal(salarySummary?.netTotal || 0);
     } catch (err: any) {
       setError(err.response?.data?.message || 'خطأ في جلب البيانات');
     } finally {
@@ -81,7 +110,7 @@ const FursatkumDashboard: React.FC = () => {
         </Card>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={3}>
           <Card>
             <CardContent>
@@ -105,7 +134,30 @@ const FursatkumDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2">إجمالي القروض المستحقة</Typography>
+              <Typography variant="h5" fontWeight="bold">
+                {outstandingLoans.toLocaleString('en-US', { minimumFractionDigits: 3 })} د.ك
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2">إجمالي الرواتب (هذا الشهر)</Typography>
+              <Typography variant="h5" fontWeight="bold">
+                {salaryTotal.toLocaleString('en-US', { minimumFractionDigits: 3 })} د.ك
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2">فواتير الدخل</Typography>
@@ -113,7 +165,7 @@ const FursatkumDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2">إيصالات الصرف</Typography>
@@ -121,7 +173,7 @@ const FursatkumDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2">محذوف</Typography>

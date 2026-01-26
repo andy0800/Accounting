@@ -81,6 +81,19 @@ const FursatkumNewInvoice: React.FC = () => {
 
       <Card>
         <CardContent>
+          {form.type === 'spending' && (
+            <Box sx={{ mb: 2, p: 2, border: '1px dashed #90a4ae', borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                صرف الرواتب
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                لصرف راتب مع خصم القروض، استخدم شاشة الرواتب المخصصة.
+              </Typography>
+              <Button variant="outlined" onClick={() => navigate('/fursatkum/salaries/process')}>
+                الانتقال لصرف الرواتب
+              </Button>
+            </Box>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
               <TextField

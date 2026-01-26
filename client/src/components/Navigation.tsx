@@ -89,6 +89,10 @@ const isFarwaniya2User = role === 'farwaniya2_user';
     { text: 'إيصال صرف جديد', icon: <AddIcon />, path: '/fursatkum/invoices/new?type=spending', roles: ['admin'] },
     { text: 'المحذوفات', icon: <DeleteIcon />, path: '/fursatkum/deleted', roles: ['admin'] },
     { text: 'محاسبة فرصتكم', icon: <WalletIcon />, path: '/fursatkum/accounting', roles: ['admin'] },
+    { text: 'الموظفون', icon: <PeopleIcon />, path: '/fursatkum/employees', roles: ['admin'] },
+    { text: 'موظف جديد', icon: <AddIcon />, path: '/fursatkum/employees/new', roles: ['admin'] },
+    { text: 'قرض موظف جديد', icon: <AddIcon />, path: '/fursatkum/loans/new', roles: ['admin'] },
+    { text: 'صرف الرواتب', icon: <AccountIcon />, path: '/fursatkum/salaries/process', roles: ['admin'] },
   ];
 
 const farwaniya1MenuItems = [

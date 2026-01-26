@@ -16,6 +16,8 @@ import {
   TableRow,
   Typography,
   Chip,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -62,6 +64,10 @@ const typeColors: Record<string, 'success' | 'error' | 'warning' | 'info' | 'def
   spending_reversal: 'warning',
   income_adjustment: 'default',
   spending_adjustment: 'default',
+  employee_loan_given: 'warning',
+  employee_loan_repayment: 'info',
+  salary_payment: 'error',
+  salary_loan_deduction: 'default',
 };
 
 const typeLabels: Record<string, string> = {
@@ -71,6 +77,10 @@ const typeLabels: Record<string, string> = {
   spending_reversal: 'عكس صرف',
   income_adjustment: 'تعديل دخل',
   spending_adjustment: 'تعديل صرف',
+  employee_loan_given: 'قرض موظف',
+  employee_loan_repayment: 'سداد قرض موظف',
+  salary_payment: 'صرف راتب',
+  salary_loan_deduction: 'خصم قرض من راتب',
 };
 
 const FursatkumAccounting: React.FC = () => {
@@ -78,6 +88,7 @@ const FursatkumAccounting: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeLedger, setActiveLedger] = useState<'all' | 'bank' | 'cash'>('all');
+  const [activeType, setActiveType] = useState('all');
 
   const fetchData = async () => {
     try {
@@ -121,8 +132,11 @@ const FursatkumAccounting: React.FC = () => {
 
   if (!data) return null;
 
-  const filteredTransactions =
-    activeLedger === 'all' ? data.transactions : data.transactions.filter((t) => t.ledger === activeLedger);
+  const filteredTransactions = data.transactions.filter((t) => {
+    const ledgerMatch = activeLedger === 'all' || t.ledger === activeLedger;
+    const typeMatch = activeType === 'all' || t.type === activeType;
+    return ledgerMatch && typeMatch;
+  });
 
   return (
     <Box sx={{ p: 3 }}>
@@ -244,6 +258,24 @@ const FursatkumAccounting: React.FC = () => {
             <Tab label="حساب بنكي" value="bank" />
             <Tab label="صندوق نقدي" value="cash" />
           </Tabs>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                select
+                fullWidth
+                label="نوع المعاملة"
+                value={activeType}
+                onChange={(e) => setActiveType(e.target.value)}
+              >
+                <MenuItem value="all">الكل</MenuItem>
+                {Object.keys(typeLabels).map((key) => (
+                  <MenuItem key={key} value={key}>
+                    {typeLabels[key]}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
 
           <TableContainer>
             <Table>

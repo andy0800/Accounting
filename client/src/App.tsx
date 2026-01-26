@@ -50,6 +50,11 @@ const FursatkumNewInvoice = React.lazy(() => import('./pages/fursatkum/Fursatkum
 const FursatkumInvoiceDetails = React.lazy(() => import('./pages/fursatkum/FursatkumInvoiceDetails'));
 const FursatkumDeletedInvoices = React.lazy(() => import('./pages/fursatkum/FursatkumDeletedInvoices'));
 const FursatkumAccounting = React.lazy(() => import('./pages/fursatkum/FursatkumAccounting'));
+const FursatkumEmployees = React.lazy(() => import('./pages/fursatkum/EmployeesList'));
+const FursatkumEmployeeDetails = React.lazy(() => import('./pages/fursatkum/EmployeeDetails'));
+const FursatkumNewEmployee = React.lazy(() => import('./pages/fursatkum/NewEmployee'));
+const FursatkumNewLoan = React.lazy(() => import('./pages/fursatkum/NewLoan'));
+const FursatkumSalaryProcessor = React.lazy(() => import('./pages/fursatkum/SalaryProcessor'));
 // Farwaniya office systems
 const FW1Dashboard = React.lazy(() => import('./pages/farwaniya/FW1Dashboard'));
 const FW1Invoices = React.lazy(() => import('./pages/farwaniya/FW1Invoices'));
@@ -361,6 +366,11 @@ function App() {
                     <Route path="/fursatkum/invoices/:id" element={protect(<FursatkumInvoiceDetails />, '/fursatkum/invoices/:id')} />
                     <Route path="/fursatkum/deleted" element={protect(<FursatkumDeletedInvoices />, '/fursatkum/deleted')} />
                     <Route path="/fursatkum/accounting" element={protect(<FursatkumAccounting />, '/fursatkum/accounting')} />
+                    <Route path="/fursatkum/employees" element={protect(<FursatkumEmployees />, '/fursatkum/employees')} />
+                    <Route path="/fursatkum/employees/new" element={protect(<FursatkumNewEmployee />, '/fursatkum/employees/new')} />
+                    <Route path="/fursatkum/employees/:id" element={protect(<FursatkumEmployeeDetails />, '/fursatkum/employees/:id')} />
+                    <Route path="/fursatkum/loans/new" element={protect(<FursatkumNewLoan />, '/fursatkum/loans/new')} />
+                    <Route path="/fursatkum/salaries/process" element={protect(<FursatkumSalaryProcessor />, '/fursatkum/salaries/process')} />
 
                     {/* Farwaniya office systems */}
                     <Route path="/farwaniya1" element={protect(<FW1Dashboard />, '/farwaniya1')} />

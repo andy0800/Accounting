@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const FursatkumInvoice = require('../models/FursatkumInvoice');
 const FursatkumTransaction = require('../models/FursatkumTransaction');
 const FursatkumAccount = require('../models/FursatkumAccount');
+const FursatkumEmployeeLoan = require('../models/FursatkumEmployeeLoan');
+const FursatkumSalaryPayment = require('../models/FursatkumSalaryPayment');
+const FursatkumEmployee = require('../models/FursatkumEmployee');
 
 const router = express.Router();
 
@@ -474,6 +477,471 @@ router.delete('/invoices/:id', async (req, res) => {
     res.json({ message: 'تم حذف الفاتورة بنجاح', invoice });
   } catch (error) {
     res.status(500).json({ message: 'خطأ في حذف الفاتورة', error: error.message });
+  }
+});
+
+// ==================== EMPLOYEE LOANS & SALARIES ====================
+
+// Employees
+router.get('/employees', async (req, res) => {
+  try {
+    const { status = 'active', page = 1, limit = 50, search } = req.query;
+    const filters = { status };
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      filters.name = regex;
+    }
+
+    const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const [employees, total] = await Promise.all([
+      FursatkumEmployee.find(filters)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+      FursatkumEmployee.countDocuments(filters),
+    ]);
+
+    res.json({
+      employees,
+      pagination: {
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        pages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب الموظفين', error: error.message });
+  }
+});
+
+router.get('/employees/:id', async (req, res) => {
+  try {
+    const employee = await FursatkumEmployee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ message: 'الموظف غير موجود' });
+    res.json(employee);
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب الموظف', error: error.message });
+  }
+});
+
+router.post('/employees', async (req, res) => {
+  try {
+    const { name, monthlySalary, status, notes } = req.body;
+    if (!name || monthlySalary === undefined) {
+      return res.status(400).json({ message: 'الحقول الأساسية مطلوبة' });
+    }
+    const salaryValue = parseFloat(monthlySalary);
+    if (isNaN(salaryValue) || salaryValue <= 0) {
+      return res.status(400).json({ message: 'قيمة الراتب غير صالحة' });
+    }
+
+    const employee = new FursatkumEmployee({
+      name,
+      monthlySalary: salaryValue,
+      status: status || 'active',
+      notes,
+      createdBy: getUserId(req),
+    });
+    await employee.save();
+    res.status(201).json({ message: 'تم إنشاء الموظف بنجاح', employee });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في إنشاء الموظف', error: error.message });
+  }
+});
+
+router.put('/employees/:id', async (req, res) => {
+  try {
+    const { name, monthlySalary, status, notes } = req.body;
+    const employee = await FursatkumEmployee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ message: 'الموظف غير موجود' });
+
+    if (name !== undefined) employee.name = name;
+    if (monthlySalary !== undefined) {
+      const salaryValue = parseFloat(monthlySalary);
+      if (isNaN(salaryValue) || salaryValue <= 0) {
+        return res.status(400).json({ message: 'قيمة الراتب غير صالحة' });
+      }
+      employee.monthlySalary = salaryValue;
+    }
+    if (status !== undefined) employee.status = status;
+    if (notes !== undefined) employee.notes = notes;
+
+    await employee.save();
+    res.json({ message: 'تم تحديث الموظف بنجاح', employee });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في تحديث الموظف', error: error.message });
+  }
+});
+
+// List employee loans
+router.get('/employee-loans', async (req, res) => {
+  try {
+    const { employeeId, status, page = 1, limit = 50 } = req.query;
+    const filters = {};
+    if (employeeId) filters.employeeId = employeeId;
+    if (status) filters.status = status;
+
+    const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const [loans, total] = await Promise.all([
+      FursatkumEmployeeLoan.find(filters)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .populate('employeeId', 'name')
+        .populate('createdBy', 'username'),
+      FursatkumEmployeeLoan.countDocuments(filters),
+    ]);
+
+    res.json({
+      loans,
+      pagination: {
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        pages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب القروض', error: error.message });
+  }
+});
+
+router.get('/employee-loans/summary', async (req, res) => {
+  try {
+    const [sumAgg, count] = await Promise.all([
+      FursatkumEmployeeLoan.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: null, total: { $sum: '$remainingAmount' } } },
+      ]),
+      FursatkumEmployeeLoan.countDocuments({ status: 'active' }),
+    ]);
+    const outstandingTotal = sumAgg.length ? sumAgg[0].total : 0;
+    res.json({ outstandingTotal, activeCount: count });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب ملخص القروض', error: error.message });
+  }
+});
+
+// Single loan
+router.get('/employee-loans/:id', async (req, res) => {
+  try {
+    const loan = await FursatkumEmployeeLoan.findById(req.params.id)
+      .populate('employeeId', 'name')
+      .populate('createdBy', 'username');
+    if (!loan) return res.status(404).json({ message: 'القرض غير موجود' });
+    res.json(loan);
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب القرض', error: error.message });
+  }
+});
+
+// List salary payments
+router.get('/salaries', async (req, res) => {
+  try {
+    const { employeeId, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const filters = {};
+    if (employeeId) filters.employeeId = employeeId;
+    if (startDate || endDate) {
+      filters.date = {};
+      if (startDate) filters.date.$gte = new Date(startDate);
+      if (endDate) filters.date.$lte = new Date(endDate);
+    }
+
+    const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const [salaries, total] = await Promise.all([
+      FursatkumSalaryPayment.find(filters)
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .populate('employeeId', 'name')
+        .populate('createdBy', 'username'),
+      FursatkumSalaryPayment.countDocuments(filters),
+    ]);
+
+    res.json({
+      salaries,
+      pagination: {
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        pages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب الرواتب', error: error.message });
+  }
+});
+
+router.get('/salaries/summary', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const filters = {};
+    if (startDate || endDate) {
+      filters.date = {};
+      if (startDate) filters.date.$gte = new Date(startDate);
+      if (endDate) filters.date.$lte = new Date(endDate);
+    }
+
+    const [netAgg, grossAgg] = await Promise.all([
+      FursatkumSalaryPayment.aggregate([
+        { $match: filters },
+        { $group: { _id: null, total: { $sum: '$netPaid' } } },
+      ]),
+      FursatkumSalaryPayment.aggregate([
+        { $match: filters },
+        { $group: { _id: null, total: { $sum: '$grossSalary' } } },
+      ]),
+    ]);
+    const netTotal = netAgg.length ? netAgg[0].total : 0;
+    const grossTotal = grossAgg.length ? grossAgg[0].total : 0;
+    res.json({ netTotal, grossTotal });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في جلب ملخص الرواتب', error: error.message });
+  }
+});
+
+router.post('/employee-loans', async (req, res) => {
+  try {
+    const { employeeId, amount, ledger, monthlyDeduction, description } = req.body;
+
+    if (!employeeId || amount === undefined || !ledger) {
+      return res.status(400).json({ message: 'الحقول الأساسية مطلوبة' });
+    }
+    if (!['cash', 'bank'].includes(ledger)) {
+      return res.status(400).json({ message: 'مصدر/وجهة غير صالحة' });
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ message: 'قيمة القرض غير صالحة' });
+    }
+
+    let numMonthlyDeduction;
+    if (monthlyDeduction !== undefined && monthlyDeduction !== null && monthlyDeduction !== '') {
+      numMonthlyDeduction = parseFloat(monthlyDeduction);
+      if (isNaN(numMonthlyDeduction) || numMonthlyDeduction < 0) {
+        return res.status(400).json({ message: 'قيمة الخصم الشهري غير صالحة' });
+      }
+    }
+
+    const employee = await FursatkumEmployee.findById(employeeId);
+    if (!employee) {
+      return res.status(400).json({ message: 'الموظف غير موجود' });
+    }
+
+    const account = await FursatkumAccount.getAccount();
+    const ledgerField = getLedgerField(ledger);
+
+    if (numAmount > account[ledgerField]) {
+      return res.status(400).json({
+        message: 'الرصيد غير كافٍ في المصدر المحدد',
+        available: account[ledgerField],
+        required: numAmount,
+      });
+    }
+
+    account[ledgerField] -= numAmount;
+
+    const referenceNumber = await FursatkumAccount.getNextReference('loan');
+
+    const loan = new FursatkumEmployeeLoan({
+      employeeId,
+      referenceNumber,
+      originalAmount: numAmount,
+      remainingAmount: numAmount,
+      monthlyDeduction: numMonthlyDeduction,
+      description,
+      createdBy: getUserId(req),
+    });
+
+    await loan.save();
+    await account.save();
+
+    await FursatkumTransaction.create({
+      type: 'employee_loan_given',
+      ledger,
+      amount: -numAmount,
+      balanceAfter: account[ledgerField],
+      date: new Date(),
+      description: `صرف قرض موظف (${referenceNumber})`,
+      performedBy: getUserId(req),
+    });
+
+    res.status(201).json({ message: 'تم إنشاء قرض الموظف بنجاح', loan });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في إنشاء قرض الموظف', error: error.message });
+  }
+});
+
+router.post('/employee-loans/:id/repay', async (req, res) => {
+  try {
+    const { amount, ledger } = req.body;
+
+    if (amount === undefined || !ledger) {
+      return res.status(400).json({ message: 'الحقول الأساسية مطلوبة' });
+    }
+    if (!['cash', 'bank'].includes(ledger)) {
+      return res.status(400).json({ message: 'مصدر/وجهة غير صالحة' });
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ message: 'قيمة السداد غير صالحة' });
+    }
+
+    const loan = await FursatkumEmployeeLoan.findById(req.params.id);
+    if (!loan) return res.status(404).json({ message: 'القرض غير موجود' });
+    if (loan.status !== 'active') {
+      return res.status(400).json({ message: 'لا يمكن سداد قرض غير نشط' });
+    }
+    if (numAmount > loan.remainingAmount) {
+      return res.status(400).json({ message: 'قيمة السداد أكبر من المتبقي' });
+    }
+
+    const account = await FursatkumAccount.getAccount();
+    const ledgerField = getLedgerField(ledger);
+
+    account[ledgerField] += numAmount;
+    loan.remainingAmount -= numAmount;
+    if (loan.remainingAmount <= 0) {
+      loan.remainingAmount = 0;
+      loan.status = 'paid';
+    }
+
+    await loan.save();
+    await account.save();
+
+    await FursatkumTransaction.create({
+      type: 'employee_loan_repayment',
+      ledger,
+      amount: numAmount,
+      balanceAfter: account[ledgerField],
+      date: new Date(),
+      description: `سداد قرض موظف (${loan.referenceNumber})`,
+      performedBy: getUserId(req),
+    });
+
+    res.json({ message: 'تم سداد القرض بنجاح', loan });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في سداد القرض', error: error.message });
+  }
+});
+
+router.post('/salaries/pay', async (req, res) => {
+  try {
+    const { employeeId, grossSalary, ledger, date } = req.body;
+
+    if (!employeeId || grossSalary === undefined || !ledger || !date) {
+      return res.status(400).json({ message: 'الحقول الأساسية مطلوبة' });
+    }
+    if (!['cash', 'bank'].includes(ledger)) {
+      return res.status(400).json({ message: 'مصدر/وجهة غير صالحة' });
+    }
+
+    const numGrossSalary = parseFloat(grossSalary);
+    if (isNaN(numGrossSalary) || numGrossSalary <= 0) {
+      return res.status(400).json({ message: 'قيمة الراتب غير صالحة' });
+    }
+
+    const employee = await FursatkumEmployee.findById(employeeId);
+    if (!employee) {
+      return res.status(400).json({ message: 'الموظف غير موجود' });
+    }
+
+    const account = await FursatkumAccount.getAccount();
+    const ledgerField = getLedgerField(ledger);
+
+    const activeLoans = await FursatkumEmployeeLoan.find({ employeeId, status: 'active' }).sort({ createdAt: 1 });
+    let deduction = 0;
+    const loanAdjustments = [];
+    let remainingSalary = numGrossSalary;
+    for (const loan of activeLoans) {
+      if (remainingSalary <= 0) break;
+      const planned = loan.monthlyDeduction !== undefined && loan.monthlyDeduction !== null
+        ? loan.monthlyDeduction
+        : loan.remainingAmount;
+      const applied = Math.min(planned, loan.remainingAmount, remainingSalary);
+      if (applied > 0) {
+        deduction += applied;
+        remainingSalary -= applied;
+        loanAdjustments.push({ loan, applied });
+      }
+    }
+
+    const netPaid = numGrossSalary - deduction;
+    if (netPaid > account[ledgerField]) {
+      return res.status(400).json({
+        message: 'الرصيد غير كافٍ في المصدر المحدد',
+        available: account[ledgerField],
+        required: netPaid,
+      });
+    }
+
+    account[ledgerField] -= netPaid;
+
+    const referenceNumber = await FursatkumAccount.getNextReference('salary');
+
+    const salary = new FursatkumSalaryPayment({
+      employeeId,
+      referenceNumber,
+      grossSalary: numGrossSalary,
+      loanDeducted: deduction,
+      netPaid,
+      ledger,
+      date: new Date(date),
+      createdBy: getUserId(req),
+    });
+
+    await salary.save();
+
+    await FursatkumTransaction.create({
+      type: 'salary_payment',
+      ledger,
+      amount: -netPaid,
+      balanceAfter: account[ledgerField],
+      date: new Date(date),
+      description: `صرف راتب (${referenceNumber})`,
+      performedBy: getUserId(req),
+    });
+
+    if (loanAdjustments.length > 0) {
+      const refs = [];
+      for (const entry of loanAdjustments) {
+        entry.loan.remainingAmount -= entry.applied;
+        if (entry.loan.remainingAmount <= 0) {
+          entry.loan.remainingAmount = 0;
+          entry.loan.status = 'paid';
+        }
+        await entry.loan.save();
+        refs.push(entry.loan.referenceNumber);
+      }
+
+      await FursatkumTransaction.create({
+        type: 'salary_loan_deduction',
+        ledger,
+        amount: 0,
+        balanceAfter: account[ledgerField],
+        date: new Date(date),
+        description: `خصم قروض (${refs.join(', ')}) من راتب (${referenceNumber})`,
+        performedBy: getUserId(req),
+      });
+    }
+
+    await account.save();
+
+    res.status(201).json({ message: 'تم صرف الراتب بنجاح', salary });
+  } catch (error) {
+    res.status(500).json({ message: 'خطأ في صرف الراتب', error: error.message });
   }
 });
 

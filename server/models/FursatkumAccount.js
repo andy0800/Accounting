@@ -26,6 +26,14 @@ const fursatkumAccountSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  loanCounter: {
+    type: Number,
+    default: 0,
+  },
+  salaryCounter: {
+    type: Number,
+    default: 0,
+  },
   bankInfo: {
     type: bankInfoSchema,
     default: () => ({}),
@@ -43,6 +51,8 @@ fursatkumAccountSchema.statics.getAccount = async function() {
       cashBalance: 0,
       incomeCounter: 0,
       spendingCounter: 0,
+      loanCounter: 0,
+      salaryCounter: 0,
       bankInfo: {},
     });
   }
@@ -59,6 +69,14 @@ fursatkumAccountSchema.statics.getNextReference = async function(type) {
     account.incomeCounter += 1;
     counter = account.incomeCounter;
     prefix = 'F-INC';
+  } else if (type === 'loan') {
+    account.loanCounter += 1;
+    counter = account.loanCounter;
+    prefix = 'F-LOAN';
+  } else if (type === 'salary') {
+    account.salaryCounter += 1;
+    counter = account.salaryCounter;
+    prefix = 'F-SAL';
   } else {
     account.spendingCounter += 1;
     counter = account.spendingCounter;
