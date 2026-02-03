@@ -14,7 +14,6 @@ import {
   TextField,
   MenuItem,
   FormControl,
-  InputLabel,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -464,9 +463,24 @@ const farwaniya2MenuItems = [
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {isHomeServiceOnly ? 'نظام محاسبة الخدمات المنزلية' : 'نظام إدارة التأشيرات والمحاسبة'}
           </Typography>
+          <Box
+            sx={{
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              backgroundColor: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.35)',
+              color: '#fff',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {getSystemTitle()}
+          </Box>
         </Toolbar>
       </AppBar>
       <Box

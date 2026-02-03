@@ -115,28 +115,64 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        '@keyframes appFloat': {
+          '0%': { transform: 'translateY(0px) scale(1)' },
+          '50%': { transform: 'translateY(-6px) scale(1.02)' },
+          '100%': { transform: 'translateY(0px) scale(1)' },
+        },
+        '@keyframes appShine': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+        '@keyframes appUnderline': {
+          '0%': { transform: 'scaleX(0.7)', opacity: 0.7 },
+          '50%': { transform: 'scaleX(1)', opacity: 1 },
+          '100%': { transform: 'scaleX(0.7)', opacity: 0.7 },
+        },
         body: {
-          backgroundColor: '#f4f6fa',
+          background: 'var(--app-bg, #f4f6fa)',
           // Fix for -moz-osx-font-smoothing warning
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
+        },
+        'body::before': {
+          content: '""',
+          position: 'fixed',
+          inset: 0,
+          background: [
+            'radial-gradient(600px 300px at 10% 10%, rgba(255,255,255,0.35), transparent 60%)',
+            'radial-gradient(500px 260px at 90% 20%, rgba(255,255,255,0.25), transparent 60%)',
+            'radial-gradient(700px 320px at 50% 100%, rgba(255,255,255,0.25), transparent 60%)',
+          ].join(', '),
+          opacity: 0.6,
+          pointerEvents: 'none',
+          zIndex: 0,
+          animation: 'appFloat 18s ease-in-out infinite',
+        },
+        '#root': {
+          position: 'relative',
+          zIndex: 1,
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          background: 'linear-gradient(90deg, #1565c0 0%, #1976d2 100%)',
-          boxShadow: '0 2px 8px rgba(21,101,192,0.08)',
+          background: 'linear-gradient(90deg, var(--app-accent, #1565c0) 0%, var(--app-accent-2, #1976d2) 100%)',
+          boxShadow: '0 2px 8px var(--app-shadow, rgba(21,101,192,0.08))',
+          backgroundSize: '200% 100%',
+          animation: 'appShine 18s ease-in-out infinite',
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 2px 12px rgba(21,101,192,0.07)',
+          boxShadow: '0 2px 12px var(--app-shadow, rgba(21,101,192,0.07))',
           borderRadius: 16,
-          border: '1px solid #e0e0e0',
+          border: '1px solid var(--app-border, #e0e0e0)',
+          borderTop: '3px solid var(--app-accent, #1565c0)',
           padding: '16px',
         },
       },
@@ -156,6 +192,57 @@ const theme = createTheme({
           fontWeight: 700,
           textTransform: 'none',
           boxShadow: 'none',
+          '&:focus-visible': {
+            outline: 'none',
+            boxShadow: '0 0 0 3px var(--app-focus, rgba(21,101,192,0.25))',
+          },
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        h4: {
+          position: 'relative',
+          paddingBottom: '6px',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            width: '56px',
+            height: '3px',
+            borderRadius: '999px',
+            background: 'var(--app-accent, #1565c0)',
+            transformOrigin: 'right center',
+            animation: 'appUnderline 6s ease-in-out infinite',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          border: '1px solid var(--app-border, #e0e0e0)',
+          backgroundColor: 'rgba(255,255,255,0.85)',
+          '& .MuiChip-label': {
+            fontWeight: 700,
+            color: 'var(--app-accent, #1565c0)',
+          },
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s ease',
+          '&.Mui-selected': {
+            backgroundColor: 'var(--app-selected, rgba(21,101,192,0.12))',
+            boxShadow: '0 0 0 1px var(--app-border, #e0e0e0), 0 4px 12px var(--app-shadow, rgba(21,101,192,0.12))',
+            borderRight: '3px solid var(--app-accent, #1565c0)',
+          },
+          '&.Mui-selected:hover': {
+            backgroundColor: 'var(--app-selected-hover, rgba(21,101,192,0.16))',
+          },
         },
       },
     },
@@ -167,8 +254,8 @@ const theme = createTheme({
         },
         head: {
           fontWeight: 700,
-          background: '#e3eaf6',
-          color: '#1565c0',
+          background: 'var(--app-header-bg, #e3eaf6)',
+          color: 'var(--app-accent, #1565c0)',
           fontSize: '1.05rem',
         },
         body: {
@@ -184,8 +271,8 @@ const theme = createTheme({
           fontSize: '1rem',
         },
         columnHeaders: {
-          background: '#e3eaf6',
-          color: '#1565c0',
+          background: 'var(--app-header-bg, #e3eaf6)',
+          color: 'var(--app-accent, #1565c0)',
           fontWeight: 700,
         },
         cell: {
@@ -228,13 +315,6 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           marginBottom: 2,
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 700,
         },
       },
     },
@@ -284,6 +364,99 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  React.useEffect(() => {
+    const path = location.pathname || '/';
+    const systemKey = (() => {
+      if (path.startsWith('/fursatkum/renting')) return 'renting';
+      if (path.startsWith('/renting')) return 'renting';
+      if (path.startsWith('/home-service')) return 'home';
+      if (path.startsWith('/fursatkum')) return 'fursatkum';
+      if (path.startsWith('/farwaniya1')) return 'farwaniya1';
+      if (path.startsWith('/farwaniya2')) return 'farwaniya2';
+      return 'visa';
+    })();
+
+    const tokens = {
+      visa: {
+        accent: '#1565c0',
+        accent2: '#1976d2',
+        border: '#e0e0e0',
+        shadow: 'rgba(21,101,192,0.08)',
+        headerBg: '#e3eaf6',
+        bg: '#f4f6fa',
+        selected: 'rgba(21,101,192,0.12)',
+        selectedHover: 'rgba(21,101,192,0.16)',
+        focus: 'rgba(21,101,192,0.25)',
+      },
+      renting: {
+        accent: '#2e7d32',
+        accent2: '#43a047',
+        border: '#dfe7e1',
+        shadow: 'rgba(46,125,50,0.12)',
+        headerBg: '#e6f1e8',
+        bg: '#f3f7f4',
+        selected: 'rgba(46,125,50,0.12)',
+        selectedHover: 'rgba(46,125,50,0.16)',
+        focus: 'rgba(46,125,50,0.25)',
+      },
+      home: {
+        accent: '#6a1b9a',
+        accent2: '#8e24aa',
+        border: '#e9dff1',
+        shadow: 'rgba(106,27,154,0.12)',
+        headerBg: '#efe2f6',
+        bg: '#f7f2fa',
+        selected: 'rgba(106,27,154,0.12)',
+        selectedHover: 'rgba(106,27,154,0.16)',
+        focus: 'rgba(106,27,154,0.25)',
+      },
+      fursatkum: {
+        accent: '#0f766e',
+        accent2: '#14b8a6',
+        border: '#d7ebe8',
+        shadow: 'rgba(15,118,110,0.12)',
+        headerBg: '#e1f0ee',
+        bg: '#f1f7f7',
+        selected: 'rgba(15,118,110,0.12)',
+        selectedHover: 'rgba(15,118,110,0.16)',
+        focus: 'rgba(15,118,110,0.25)',
+      },
+      farwaniya1: {
+        accent: '#c62828',
+        accent2: '#e53935',
+        border: '#f2d9d9',
+        shadow: 'rgba(198,40,40,0.12)',
+        headerBg: '#f6e0e0',
+        bg: '#faf2f2',
+        selected: 'rgba(198,40,40,0.12)',
+        selectedHover: 'rgba(198,40,40,0.16)',
+        focus: 'rgba(198,40,40,0.25)',
+      },
+      farwaniya2: {
+        accent: '#ef6c00',
+        accent2: '#fb8c00',
+        border: '#f6e4d6',
+        shadow: 'rgba(239,108,0,0.12)',
+        headerBg: '#f8eadc',
+        bg: '#faf5f0',
+        selected: 'rgba(239,108,0,0.12)',
+        selectedHover: 'rgba(239,108,0,0.16)',
+        focus: 'rgba(239,108,0,0.25)',
+      },
+    }[systemKey];
+
+    const root = document.body;
+    root.style.setProperty('--app-accent', tokens.accent);
+    root.style.setProperty('--app-accent-2', tokens.accent2);
+    root.style.setProperty('--app-border', tokens.border);
+    root.style.setProperty('--app-shadow', tokens.shadow);
+    root.style.setProperty('--app-header-bg', tokens.headerBg);
+    root.style.setProperty('--app-bg', tokens.bg);
+    root.style.setProperty('--app-selected', tokens.selected);
+    root.style.setProperty('--app-selected-hover', tokens.selectedHover);
+    root.style.setProperty('--app-focus', tokens.focus);
+  }, [location.pathname]);
+
   const isLogged = auth.isLoggedIn();
   const role = auth.getRole();
 
@@ -317,7 +490,15 @@ function App() {
         <CssBaseline />
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
           <Navigation />
-          <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 3,
+              pt: { xs: 9, sm: 10 },
+              background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--app-bg, #f4f6fa) 40%)',
+            }}
+          >
             <Container maxWidth="xl">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingSpinner />}>
