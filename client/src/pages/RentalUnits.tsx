@@ -222,7 +222,7 @@ const RentalUnits: React.FC = () => {
       }
       
       console.log('🔍 Fetching rental units with params:', params);
-      const response = await apiClient.get('/api/rental-units', { params });
+      const response = await apiClient.get('/api/fursatkum/rental-units', { params });
       console.log('📦 Raw API response:', response);
       console.log('📦 Response data:', response.data);
       console.log('📦 Response data type:', Array.isArray(response.data) ? 'array' : typeof response.data);
@@ -305,7 +305,7 @@ const RentalUnits: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const response = await apiClient.get('/api/exports/rental-units', { responseType: 'blob' });
+      const response = await apiClient.get('/api/fursatkum/exports/rental-units', { responseType: 'blob' });
       const blob = new Blob([response.data], { type: response.headers['content-type'] });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -328,7 +328,7 @@ const RentalUnits: React.FC = () => {
     setDetailsLoading(true);
     setDetailsError(null);
     try {
-      const response = await apiClient.get(`/api/rental-units/${unitId}/details`);
+      const response = await apiClient.get(`/api/fursatkum/rental-units/${unitId}/details`);
       setDetailsData(response.data);
     } catch (err: any) {
       setDetailsError(err?.response?.data?.message || 'فشل في جلب تفاصيل الوحدة');
@@ -367,7 +367,7 @@ const RentalUnits: React.FC = () => {
               تصدير Excel
             </Button>
           </Tooltip>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/renting/units/new')}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/fursatkum/renting/units/new')}>
             إضافة وحدة
           </Button>
         </Stack>
@@ -611,7 +611,7 @@ const RentalUnits: React.FC = () => {
                     sx={{ mt: 2 }}
                     onClick={() => {
                       closeDetails();
-                      navigate(`/renting/contracts/${detailsData.contract?._id}`);
+                      navigate(`/fursatkum/renting/contracts/${detailsData.contract?._id}`);
                     }}
                   >
                     فتح تفاصيل العقد

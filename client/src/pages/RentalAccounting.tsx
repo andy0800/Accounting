@@ -55,7 +55,7 @@ const RentalAccounting: React.FC = () => {
   const fetchData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/rental-accounting', { params: { month: selectedMonth } });
+      const response = await apiClient.get('/api/fursatkum/rental-accounting', { params: { month: selectedMonth } });
       setData(response.data);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في جلب البيانات');
@@ -70,7 +70,7 @@ const RentalAccounting: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const response = await apiClient.get('/api/exports/rental-accounting', {
+      const response = await apiClient.get('/api/fursatkum/exports/rental-accounting', {
         params: { month: selectedMonth },
         responseType: 'blob',
       });

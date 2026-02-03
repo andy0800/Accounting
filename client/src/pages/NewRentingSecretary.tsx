@@ -53,11 +53,11 @@ const NewRentingSecretary: React.FC = () => {
       Object.entries(form).forEach(([key, value]) => data.append(key, value));
       files.forEach((file) => data.append('documents', file));
 
-      await apiClient.post('/api/renting-secretaries', data, {
+      await apiClient.post('/api/fursatkum/renting-secretaries', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setSuccess(true);
-      setTimeout(() => navigate('/renting/secretaries'), 1500);
+      setTimeout(() => navigate('/fursatkum/renting/secretaries'), 1500);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في إنشاء السكرتير');
     } finally {

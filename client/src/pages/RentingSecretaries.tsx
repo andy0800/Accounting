@@ -40,7 +40,7 @@ const RentingSecretaries: React.FC = () => {
   const fetchSecretaries = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/renting-secretaries');
+      const response = await apiClient.get('/api/fursatkum/renting-secretaries');
       setSecretaries(response.data || []);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في جلب سكرتارية التأجير');
@@ -55,7 +55,7 @@ const RentingSecretaries: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const response = await apiClient.get('/api/exports/rental-secretaries', {
+      const response = await apiClient.get('/api/fursatkum/exports/rental-secretaries', {
         responseType: 'blob',
       });
       const blob = new Blob([response.data], { type: response.headers['content-type'] });
@@ -89,7 +89,7 @@ const RentingSecretaries: React.FC = () => {
           <Button variant="outlined" startIcon={<CloudDownloadIcon />} onClick={handleExport}>
             تصدير Excel
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/renting/secretaries/new')}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/fursatkum/renting/secretaries/new')}>
             إضافة سكرتير
           </Button>
         </Stack>

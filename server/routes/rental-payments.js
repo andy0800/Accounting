@@ -1,8 +1,12 @@
 const express = require('express');
 const dayjs = require('dayjs');
+const mongoose = require('mongoose');
 const RentalPayment = require('../models/RentalPayment');
 const RentalContract = require('../models/RentalContract');
 const RentalUnit = require('../models/RentalUnit');
+const FursatkumAccount = require('../models/FursatkumAccount');
+const FursatkumInvoice = require('../models/FursatkumInvoice');
+const FursatkumTransaction = require('../models/FursatkumTransaction');
 
 const router = express.Router();
 
@@ -21,6 +25,17 @@ function requireAuth(req, res, next) {
 
 router.use(requireAuth);
 
+const getValidUserId = (req) => {
+  const userId = req.user?.userId || req.user?.sub || req.user?.id;
+  if (!userId) return undefined;
+  if (mongoose.Types.ObjectId.isValid(userId) && userId !== 'admin') {
+    return userId;
+  }
+  return undefined;
+};
+
+const getLedgerField = (ledger) => (ledger === 'bank' ? 'bankBalance' : 'cashBalance');
+
 function evaluateStatus(month, today = dayjs()) {
   if (month.remainingAmount <= 0) return 'Paid';
   if (month.totalPaid > 0) return today.isAfter(dayjs(month.dueDate)) ? 'Overdue' : 'Partially Paid';
@@ -36,12 +51,20 @@ router.post('/', async (req, res) => {
       amount,
       method,
       transactionRef,
+      ledger,
       paymentDate,
       notes,
     } = req.body;
 
     if (!contractId || !monthYear || !amount || !method) {
       return res.status(400).json({ message: 'الحقول الأساسية مطلوبة' });
+    }
+    const ledgerValue = ledger || 'cash';
+    if (!['cash', 'bank'].includes(ledgerValue)) {
+      return res.status(400).json({ message: 'مصدر/وجهة غير صالحة' });
+    }
+    if (ledgerValue === 'bank' && !transactionRef) {
+      return res.status(400).json({ message: 'رقم مرجع المعاملة مطلوب لمدفوعات البنك' });
     }
 
     const contract = await RentalContract.findById(contractId);
@@ -63,6 +86,7 @@ router.post('/', async (req, res) => {
       amount: numericAmount,
       method,
       transactionRef,
+      ledger: ledgerValue,
       paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
       notes,
       enteredBy: req.user?.username,
@@ -84,6 +108,45 @@ router.post('/', async (req, res) => {
     paymentDoc.remainingBalance = monthEntry.remainingAmount;
     paymentDoc.isPartial = monthEntry.remainingAmount > 0;
 
+    const account = await FursatkumAccount.getAccount();
+    const ledgerField = getLedgerField(ledgerValue);
+    account[ledgerField] += numericAmount;
+
+    const referenceNumber = await FursatkumAccount.getNextReference('income');
+    const invoiceData = {
+      referenceNumber,
+      type: 'income',
+      ledger: ledgerValue,
+      bankReference: ledgerValue === 'bank' ? transactionRef : undefined,
+      name: `دفعة إيجار (${contract.referenceNumber})`,
+      value: numericAmount,
+      date: paymentDate ? new Date(paymentDate) : new Date(),
+      details: `دفعة إيجار شهر ${monthYear}`,
+    };
+    const validUserId = getValidUserId(req);
+    if (validUserId) {
+      invoiceData.createdBy = validUserId;
+    }
+    const fursatkumInvoice = new FursatkumInvoice(invoiceData);
+
+    await fursatkumInvoice.save();
+    await account.save();
+
+    await FursatkumTransaction.create({
+      type: 'income',
+      ledger: ledgerValue,
+      amount: numericAmount,
+      balanceAfter: account[ledgerField],
+      date: paymentDate ? new Date(paymentDate) : new Date(),
+      invoiceId: fursatkumInvoice._id,
+      invoiceRef: referenceNumber,
+      description: `دخل تأجير (${contract.referenceNumber})`,
+      performedBy: validUserId,
+    });
+
+    paymentDoc.fursatkumInvoiceId = fursatkumInvoice._id;
+    paymentDoc.fursatkumInvoiceRef = referenceNumber;
+
     await contract.save();
     await paymentDoc.save();
 
@@ -104,7 +167,17 @@ router.post('/', async (req, res) => {
       await unit.save();
     }
 
-    res.status(201).json({ message: 'تم تسجيل الدفعة', payment: paymentDoc, contract });
+    res.status(201).json({
+      message: 'تم تسجيل الدفعة',
+      payment: paymentDoc,
+      contract,
+      fursatkumInvoice: {
+        _id: fursatkumInvoice._id,
+        referenceNumber,
+      ledger: ledgerValue,
+        ledger: ledgerValue,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: 'خطأ في تسجيل الدفعة', error: error.message });
   }

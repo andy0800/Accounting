@@ -48,8 +48,8 @@ const NewRentalContract: React.FC = () => {
   const fetchOptions = async () => {
     try {
       const [unitsRes, secRes] = await Promise.all([
-        apiClient.get('/api/rental-units/available/list'),
-        apiClient.get('/api/renting-secretaries'),
+        apiClient.get('/api/fursatkum/rental-units/available/list'),
+        apiClient.get('/api/fursatkum/renting-secretaries'),
       ]);
       setUnits(unitsRes.data || []);
       setSecretaries(secRes.data || []);
@@ -82,14 +82,14 @@ const NewRentalContract: React.FC = () => {
 
     try {
       setLoading(true);
-      await apiClient.post('/api/rental-contracts', {
+      await apiClient.post('/api/fursatkum/rental-contracts', {
         ...form,
         rentAmount: parseFloat(form.rentAmount),
         dueDay: Number(form.dueDay),
         durationMonths: Number(form.durationMonths),
       });
       setSuccess(true);
-      setTimeout(() => navigate('/renting/contracts'), 1500);
+      setTimeout(() => navigate('/fursatkum/renting/contracts'), 1500);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في إنشاء العقد');
     } finally {

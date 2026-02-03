@@ -41,12 +41,12 @@ const NewRentalUnit: React.FC = () => {
 
     try {
       setLoading(true);
-      await apiClient.post('/api/rental-units', {
+      await apiClient.post('/api/fursatkum/rental-units', {
         ...form,
         rentAmount: parseFloat(form.rentAmount),
       });
       setSuccess(true);
-      setTimeout(() => navigate('/renting/units'), 1200);
+      setTimeout(() => navigate('/fursatkum/renting/units'), 1200);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في إنشاء الوحدة');
     } finally {

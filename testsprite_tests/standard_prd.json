@@ -1,0 +1,140 @@
+{
+  "projectName": "Accounting System",
+  "version": "1.0.0",
+  "description": "Fursatkum Accounting System - Comprehensive financial management platform with dual-ledger accounting, invoice management, employee loan tracking, and salary processing",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "name": "Authentication",
+      "description": "User authentication and authorization using JWT tokens",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "User can login with valid credentials",
+        "JWT token is stored after successful login",
+        "Unauthenticated users are redirected to login",
+        "Invalid credentials are rejected"
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "name": "Dashboard",
+      "description": "Dashboard overview with balances, invoice counts, and recent transactions",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "Dashboard displays cash and bank balances",
+        "Invoice counts (income, spending, deleted) are shown",
+        "Recent transactions are displayed",
+        "Outstanding loans total is shown",
+        "Current month salary total is shown"
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "name": "Invoice Management",
+      "description": "Create, read, update, delete invoices (income and spending) with dual ledger support",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "User can create income invoices",
+        "User can create spending invoices",
+        "Balance validation prevents negative balances",
+        "Invoices can be filtered by type, ledger, status, date",
+        "Invoices can be edited with reason tracking",
+        "Invoices can be soft deleted with reversal transactions",
+        "Documents can be attached to invoices",
+        "Reference numbers are auto-generated (F-INC-XXX, F-SPD-XXX)"
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "name": "Employee Management",
+      "description": "Create, read, update employees with monthly salary tracking",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "User can create employee records",
+        "Employee monthly salary is tracked",
+        "Employees can be searched and filtered",
+        "Employee details show loan and salary history",
+        "Employees can be updated"
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "name": "Employee Loan Management",
+      "description": "Issue loans to employees, track repayments, and manage loan status",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "User can issue loans to employees",
+        "Loans require sufficient balance validation",
+        "Monthly deduction amounts can be set",
+        "Loans can be repaid partially or fully",
+        "Loan status updates automatically (active/paid)",
+        "Reference numbers are auto-generated (F-LOAN-XXX)",
+        "Loan summary shows total outstanding loans"
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "name": "Salary Payment",
+      "description": "Process employee salary payments with automatic loan deduction",
+      "priority": "High",
+      "acceptanceCriteria": [
+        "User can process salary payments",
+        "Active loans are automatically deducted from salary",
+        "Multiple loans are handled (oldest first)",
+        "Deduction calculation: min(monthlyDeduction, remainingAmount, grossSalary)",
+        "Net paid = grossSalary - totalDeduction",
+        "Loans are marked 'paid' when fully repaid",
+        "Reference numbers are auto-generated (F-SAL-XXX)",
+        "Salary summary shows current month totals"
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "name": "Accounting & Transactions",
+      "description": "View accounting summary and transaction history",
+      "priority": "Medium",
+      "acceptanceCriteria": [
+        "User can view cash and bank balances",
+        "Transaction history is displayed with filters",
+        "All transaction types are shown with correct labels",
+        "Transactions are color-coded (income=green, spending=red, etc.)"
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "name": "Navigation & UI",
+      "description": "Navigation menu and user interface elements",
+      "priority": "Medium",
+      "acceptanceCriteria": [
+        "Navigation menu displays all menu items",
+        "RTL layout support for Arabic",
+        "Error messages display in Arabic",
+        "UI is responsive and accessible"
+      ]
+    }
+  ],
+  "technicalSpecifications": {
+    "backend": {
+      "framework": "Express.js",
+      "database": "MongoDB",
+      "authentication": "JWT",
+      "port": 5000
+    },
+    "frontend": {
+      "framework": "React",
+      "language": "TypeScript",
+      "uiLibrary": "Material-UI",
+      "port": 3000
+    }
+  },
+  "businessRules": [
+    "No negative balances allowed",
+    "Spending invoices require balance validation",
+    "Loan deductions applied oldest loan first",
+    "Deduction cannot exceed gross salary",
+    "All edits require reason and are logged",
+    "Soft delete creates reversal transactions",
+    "Reference numbers are sequential and unique"
+  ]
+}
+

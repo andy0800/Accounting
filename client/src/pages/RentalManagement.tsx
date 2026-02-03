@@ -61,13 +61,14 @@ const RentalManagement: React.FC = () => {
     amount: '',
     method: 'Cash',
     transactionRef: '',
+    ledger: 'cash',
     paymentDate: new Date().toISOString().substring(0, 10),
   });
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/rental-management');
+      const response = await apiClient.get('/api/fursatkum/rental-management');
       setData(response.data);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في جلب البيانات');
@@ -85,6 +86,7 @@ const RentalManagement: React.FC = () => {
       amount: entry.remainingAmount.toString(),
       method: 'Cash',
       transactionRef: '',
+      ledger: 'cash',
       paymentDate: new Date().toISOString().substring(0, 10),
     });
     setPaymentDialog({ open: true, entry });
@@ -100,14 +102,19 @@ const RentalManagement: React.FC = () => {
       setError('رقم مرجع المعاملة مطلوب');
       return;
     }
+    if (paymentForm.ledger === 'bank' && !paymentForm.transactionRef.trim()) {
+      setError('رقم مرجع المعاملة مطلوب لمدفوعات البنك');
+      return;
+    }
     try {
       setError(null);
-      await apiClient.post('/api/rental-payments', {
+      await apiClient.post('/api/fursatkum/rental-payments', {
         contractId: paymentDialog.entry.contractId,
         monthYear: paymentDialog.entry.monthYear,
         amount: parseFloat(paymentForm.amount),
         method: paymentForm.method,
         transactionRef: paymentForm.transactionRef,
+        ledger: paymentForm.ledger,
         paymentDate: paymentForm.paymentDate,
       });
       setPaymentDialog({ open: false });
@@ -217,6 +224,10 @@ const RentalManagement: React.FC = () => {
             <TextField select label="طريقة الدفع" value={paymentForm.method} onChange={handlePaymentChange('method')} fullWidth>
               <MenuItem value="Cash">نقداً</MenuItem>
               <MenuItem value="KNET/Link">KNET / Link</MenuItem>
+            </TextField>
+            <TextField select label="الدفتر" value={paymentForm.ledger} onChange={handlePaymentChange('ledger')} fullWidth>
+              <MenuItem value="cash">نقدي</MenuItem>
+              <MenuItem value="bank">بنك</MenuItem>
             </TextField>
             {paymentForm.method === 'KNET/Link' && (
               <TextField

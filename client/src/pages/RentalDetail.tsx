@@ -53,6 +53,7 @@ interface Payment {
   amount: number;
   method: string;
   transactionRef?: string;
+  ledger?: string;
   paymentDate: string;
 }
 
@@ -69,6 +70,7 @@ const RentalDetail: React.FC = () => {
     amount: '',
     method: 'Cash',
     transactionRef: '',
+    ledger: 'cash',
     paymentDate: '',
     notes: '',
   });
@@ -78,8 +80,8 @@ const RentalDetail: React.FC = () => {
     try {
       setLoading(true);
       const [contractRes, paymentsRes] = await Promise.all([
-        apiClient.get(`/api/rental-contracts/${id}`),
-        apiClient.get(`/api/rental-payments/contract/${id}`),
+        apiClient.get(`/api/fursatkum/rental-contracts/${id}`),
+        apiClient.get(`/api/fursatkum/rental-payments/contract/${id}`),
       ]);
       setContract(contractRes.data);
       setPayments(paymentsRes.data || []);
@@ -101,6 +103,7 @@ const RentalDetail: React.FC = () => {
       amount: '',
       method: 'Cash',
       transactionRef: '',
+      ledger: 'cash',
       paymentDate: new Date().toISOString().substring(0, 10),
       notes: '',
     }));
@@ -121,14 +124,19 @@ const RentalDetail: React.FC = () => {
       setError('رقم مرجع المعاملة مطلوب لدفعات KNET/Link');
       return;
     }
+    if (paymentForm.ledger === 'bank' && !paymentForm.transactionRef.trim()) {
+      setError('رقم مرجع المعاملة مطلوب لمدفوعات البنك');
+      return;
+    }
     try {
       setError(null);
-      await apiClient.post('/api/rental-payments', {
+      await apiClient.post('/api/fursatkum/rental-payments', {
         contractId: contract._id,
         monthYear: paymentForm.monthYear,
         amount: parseFloat(paymentForm.amount),
         method: paymentForm.method,
         transactionRef: paymentForm.transactionRef,
+        ledger: paymentForm.ledger,
         paymentDate: paymentForm.paymentDate,
         notes: paymentForm.notes,
       });
@@ -144,7 +152,7 @@ const RentalDetail: React.FC = () => {
     if (!window.confirm('هل أنت متأكد من إنهاء العقد؟')) return;
     try {
       setTerminateLoading(true);
-      await apiClient.patch(`/api/rental-contracts/${contract._id}/terminate`, {
+      await apiClient.patch(`/api/fursatkum/rental-contracts/${contract._id}/terminate`, {
         reason: 'تم الإنهاء من الواجهة',
       });
       fetchData();
@@ -232,6 +240,7 @@ const RentalDetail: React.FC = () => {
                 <TableCell>المدفوع</TableCell>
                 <TableCell>المتبقي</TableCell>
                 <TableCell>الحالة</TableCell>
+                <TableCell>الدفتر</TableCell>
                 <TableCell>الإجراءات</TableCell>
               </TableRow>
             </TableHead>
@@ -259,6 +268,9 @@ const RentalDetail: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
+                    {payments.find((p) => p.monthYear === month.monthYear)?.ledger || '-'}
+                  </TableCell>
+                  <TableCell>
                     <Button variant="text" onClick={() => openPaymentDialog(month.monthYear)}>
                       تسجيل دفعة
                     </Button>
@@ -281,6 +293,7 @@ const RentalDetail: React.FC = () => {
                 <TableCell>التاريخ</TableCell>
                 <TableCell>الشهر</TableCell>
                 <TableCell>المبلغ</TableCell>
+                <TableCell>الدفتر</TableCell>
                 <TableCell>الطريقة</TableCell>
                 <TableCell>مرجع العملية</TableCell>
               </TableRow>
@@ -291,6 +304,7 @@ const RentalDetail: React.FC = () => {
                   <TableCell>{new Date(payment.paymentDate).toLocaleDateString('ar-KW')}</TableCell>
                   <TableCell>{payment.monthYear}</TableCell>
                   <TableCell>{payment.amount.toFixed(3)}</TableCell>
+                  <TableCell>{payment.ledger || '-'}</TableCell>
                   <TableCell>{payment.method}</TableCell>
                   <TableCell>{payment.transactionRef || '-'}</TableCell>
                 </TableRow>
@@ -337,6 +351,17 @@ const RentalDetail: React.FC = () => {
           >
             <MenuItem value="Cash">نقداً</MenuItem>
             <MenuItem value="KNET/Link">KNET / رابط</MenuItem>
+          </TextField>
+          <TextField
+            select
+            label="الدفتر"
+            value={paymentForm.ledger}
+            onChange={handlePaymentChange('ledger')}
+            fullWidth
+            margin="normal"
+          >
+            <MenuItem value="cash">نقدي</MenuItem>
+            <MenuItem value="bank">بنك</MenuItem>
           </TextField>
           {paymentForm.method === 'KNET/Link' && (
             <TextField

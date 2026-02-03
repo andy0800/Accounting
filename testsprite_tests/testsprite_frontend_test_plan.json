@@ -1,0 +1,628 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful login with valid credentials",
+    "description": "Verify that a user can login successfully using valid username and password, and receive a JWT token stored for session management.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid username and password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Check that the user is successfully logged in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that a valid JWT token is returned and stored in local storage"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Reject login with invalid credentials",
+    "description": "Ensure login fails with incorrect username or password and no JWT token is issued.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Input invalid username or password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Check that login fails and error message is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no JWT token is stored"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Unauthenticated user is redirected to login",
+    "description": "Verify that attempts to access protected routes without authentication redirect the user to the login page.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to access a protected dashboard page without being logged in"
+      },
+      {
+        "type": "assertion",
+        "description": "Check user is redirected to login page"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Dashboard displays correct financial summaries",
+    "description": "Verify the dashboard shows accurate cash and bank balances, invoice counts, recent transactions, outstanding loans total, and current month salary total.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin (username: admin, password: Aa@09876)  and navigate to the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that cash balance is displayed and matches expected value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that bank balance is displayed and matches expected value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that invoice counts (income, spending, deleted) are displayed correctly"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify recent transactions list is shown and accurate"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the outstanding loans total is displayed accurately"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the current month salary total is displayed properly"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Create income invoice successfully",
+    "description": "Verify user can create a new income invoice with dual ledger support and auto-generated reference number.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the invoice creation page"
+      },
+      {
+        "type": "action",
+        "description": "Fill invoice details as income type"
+      },
+      {
+        "type": "action",
+        "description": "Attach valid documents if applicable"
+      },
+      {
+        "type": "action",
+        "description": "Submit the invoice form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invoice is created with correct ledger entries"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that a reference number with prefix 'F-INC-' is assigned and unique"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Create spending invoice with balance validation",
+    "description": "Ensure a spending invoice cannot be created if it causes negative balance; displays error otherwise allows creation.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the invoice creation page"
+      },
+      {
+        "type": "action",
+        "description": "Fill invoice details as spending type with amount exceeding current balance"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit the invoice"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that creation is rejected with appropriate error message about insufficient balance"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Filter invoices by type, ledger, status and date",
+    "description": "Verify that user can filter invoices based on type (income/spending), ledger, status, and date range, and results update accordingly.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to invoice list page"
+      },
+      {
+        "type": "action",
+        "description": "Apply filters for invoice type (income)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify displayed invoices are only income type"
+      },
+      {
+        "type": "action",
+        "description": "Apply ledger filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invoices shown correspond to selected ledger"
+      },
+      {
+        "type": "action",
+        "description": "Apply status filter (e.g. deleted)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only invoices with deleted status are listed"
+      },
+      {
+        "type": "action",
+        "description": "Apply date range filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invoices within date range are displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Edit invoice with reason logging",
+    "description": "Verify invoices can be edited only when a valid reason is provided and changes are logged.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to invoice detail page"
+      },
+      {
+        "type": "action",
+        "description": "Click edit and modify invoice data"
+      },
+      {
+        "type": "action",
+        "description": "Input reason for edit"
+      },
+      {
+        "type": "action",
+        "description": "Submit the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invoice is updated with new details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the edit reason and change log entry is recorded"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Soft delete invoice creates reversal transaction",
+    "description": "Verify that deleting an invoice does not remove it permanently but creates a reversal transaction and marks invoice as deleted.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to an existing invoice"
+      },
+      {
+        "type": "action",
+        "description": "Perform soft delete action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invoice status changes to deleted"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a reversal transaction is created with correct details"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Verify auto-generated invoice reference numbers",
+    "description": "Ensure that income invoices have sequential references starting with 'F-INC-' and spending invoices use 'F-SPD-' followed by a unique sequential number.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create multiple income invoices consecutively"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify each income invoice has a reference number in correct format and sequence"
+      },
+      {
+        "type": "action",
+        "description": "Create multiple spending invoices consecutively"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify each spending invoice has a reference number in correct format and sequence"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Create and update employee records with salary tracking",
+    "description": "Verify creation of new employee records, updating existing records, and that monthly salary is tracked accurately.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to employee management page"
+      },
+      {
+        "type": "action",
+        "description": "Create a new employee record with all required fields including salary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify employee is created and appears in list"
+      },
+      {
+        "type": "action",
+        "description": "Update employee details and monthly salary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify updates are saved properly"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify employee monthly salary record updates accordingly"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Search and filter employees by name, loan status, and salary",
+    "description": "Verify the employee list can be searched and filtered by name, loan status, and salary range.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to employee list page"
+      },
+      {
+        "type": "action",
+        "description": "Input search criteria by employee name"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify displayed employees match search term"
+      },
+      {
+        "type": "action",
+        "description": "Apply filter for employees with active loans"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only employees with loans are shown"
+      },
+      {
+        "type": "action",
+        "description": "Apply salary range filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify employees within salary range are listed"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "View employee details including loan and salary history",
+    "description": "Ensure employee detail view correctly displays loan history, current loans, salary payments and monthly salary tracking.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to an employee detail page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loan history and current loan status are displayed accurately"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify salary payment and monthly salary records are shown"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Issue loan to employee with balance validation",
+    "description": "Verify user can issue new loans to employees only if sufficient balance exists and loans get correct reference numbers.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to loan issue page"
+      },
+      {
+        "type": "action",
+        "description": "Enter employee details, loan amount, and monthly deduction amount"
+      },
+      {
+        "type": "action",
+        "description": "Submit loan request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loan is saved and reference number with 'F-LOAN-' prefix generated"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error is shown if issuing loan causes negative balance"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Partial and full loan repayments update status",
+    "description": "Verify loans can be repaid partially or fully, with loan status transitioning from active to paid when fully repaid.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to employee loans"
+      },
+      {
+        "type": "action",
+        "description": "Make a partial repayment on an active loan"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loan balance is reduced and status remains active"
+      },
+      {
+        "type": "action",
+        "description": "Make repayment that covers remaining balance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loan status updates to 'paid'"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Loan summary shows total outstanding loans",
+    "description": "Verify loan summary reflects correct total outstanding loan amounts aggregated across employees.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to loan summary page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sum of all outstanding loans displayed matches backend data"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Process salary payment with automatic loan deductions oldest loan first",
+    "description": "Verify salary payments deduct active loans automatically starting with the oldest loan, obeying deduction rules and generating reference numbers.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to salary payment page"
+      },
+      {
+        "type": "action",
+        "description": "Select employee with multiple active loans"
+      },
+      {
+        "type": "action",
+        "description": "Process salary payment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loans are deducted in order from oldest to newest"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify deduction calculation respects min of monthlyDeduction, remainingAmount, and grossSalary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify net salary is gross minus total deductions"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify loans fully repaid in payment are marked 'paid'"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify salary payment reference number uses 'F-SAL-' prefix and is unique"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Salary summary shows current month totals",
+    "description": "Verify salary summary page displays accurate totals for salary payments made in the current month.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to salary summary dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify total salaries paid in current month matches expected values"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "View accounting balances and transaction history with filtering",
+    "description": "Ensure cash and bank balances are shown and transaction history can be filtered by type, date, and label with color-coded income/spending indicators.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to accounting summary page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cash and bank balances are displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Access transaction history tab"
+      },
+      {
+        "type": "action",
+        "description": "Apply filters for transaction types and dates"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify transactions are filtered accordingly"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify transactions are color-coded as per type (income=green, spending=red, etc.)"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Navigation menu displays all items and supports RTL layout",
+    "description": "Verify the navigation menu lists all expected menu items and supports Right-to-Left layout for Arabic language users.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load main application UI"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all navigation menu items (Dashboard, Invoices, Employees, Loans, Salary, Accounting) are visible"
+      },
+      {
+        "type": "action",
+        "description": "Switch UI language to Arabic"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the layout switches to RTL properly including navigation menu"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Error messages display correctly in Arabic",
+    "description": "Ensure that when the UI language is Arabic, all error messages throughout the system are displayed in Arabic language.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Set UI language to Arabic"
+      },
+      {
+        "type": "action",
+        "description": "Perform an action that causes an error (e.g. invalid invoice creation)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error messages are displayed in Arabic"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Responsive and accessible UI across devices",
+    "description": "Verify the user interface adapts gracefully to various screen sizes and meets accessibility standards.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access application on desktop, tablet, and mobile viewports"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI elements adjust properly without content overflow or layout breaking"
+      },
+      {
+        "type": "action",
+        "description": "Use keyboard navigation and screen reader tools"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify application is navigable via keyboard and screen reader correctly reads UI content"
+      }
+    ]
+  }
+]

@@ -7,7 +7,6 @@ import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import Navigation from './components/Navigation';
 import ErrorBoundary from './components/ErrorBoundary';
-import PerformanceMonitor from './components/PerformanceMonitor';
 import { backendPreloader } from './utils/backendPreloader';
 import { cacheManager } from './utils/cacheManager';
 import { auth } from './utils/auth';
@@ -371,6 +370,17 @@ function App() {
                     <Route path="/fursatkum/employees/:id" element={protect(<FursatkumEmployeeDetails />, '/fursatkum/employees/:id')} />
                     <Route path="/fursatkum/loans/new" element={protect(<FursatkumNewLoan />, '/fursatkum/loans/new')} />
                     <Route path="/fursatkum/salaries/process" element={protect(<FursatkumSalaryProcessor />, '/fursatkum/salaries/process')} />
+                    {/* Renting system (shifted under Fursatkum) */}
+                    <Route path="/fursatkum/renting" element={protect(<RentingDashboard />, '/fursatkum/renting')} />
+                    <Route path="/fursatkum/renting/secretaries" element={protect(<RentingSecretaries />, '/fursatkum/renting/secretaries')} />
+                    <Route path="/fursatkum/renting/secretaries/new" element={protect(<NewRentingSecretary />, '/fursatkum/renting/secretaries/new')} />
+                    <Route path="/fursatkum/renting/units" element={protect(<RentalUnits />, '/fursatkum/renting/units')} />
+                    <Route path="/fursatkum/renting/units/new" element={protect(<NewRentalUnit />, '/fursatkum/renting/units/new')} />
+                    <Route path="/fursatkum/renting/contracts" element={protect(<RentalContracts />, '/fursatkum/renting/contracts')} />
+                    <Route path="/fursatkum/renting/contracts/new" element={protect(<NewRentalContract />, '/fursatkum/renting/contracts/new')} />
+                    <Route path="/fursatkum/renting/contracts/:id" element={protect(<RentalDetail />, '/fursatkum/renting/contracts/:id')} />
+                    <Route path="/fursatkum/renting/management" element={protect(<RentalManagement />, '/fursatkum/renting/management')} />
+                    <Route path="/fursatkum/renting/accounting" element={protect(<RentalAccounting />, '/fursatkum/renting/accounting')} />
 
                     {/* Farwaniya office systems */}
                     <Route path="/farwaniya1" element={protect(<FW1Dashboard />, '/farwaniya1')} />
@@ -403,7 +413,6 @@ function App() {
             </Container>
           </Box>
         </Box>
-        <PerformanceMonitor />
       </ThemeProvider>
     </CacheProvider>
   );

@@ -165,6 +165,14 @@ app.use('/api/rental-accounting', require('./routes/rental-accounting'));
 app.use('/api/home-service', require('./routes/home-service'));
 // Fursatkum Accounting System (admin only)
 app.use('/api/fursatkum', require('./routes/fursatkum'));
+// Fursatkum: Rental system aliases (keep legacy endpoints intact)
+app.use('/api/fursatkum/renting-secretaries', require('./routes/renting-secretaries'));
+app.use('/api/fursatkum/rental-units', require('./routes/rental-units'));
+app.use('/api/fursatkum/rental-contracts', require('./routes/rental-contracts'));
+app.use('/api/fursatkum/rental-payments', require('./routes/rental-payments'));
+app.use('/api/fursatkum/rental-management', require('./routes/rental-management'));
+app.use('/api/fursatkum/rental-accounting', require('./routes/rental-accounting'));
+app.use('/api/fursatkum/exports', require('./routes/exports'));
 // Farwaniya office accounting systems
 app.use('/api/farwaniya1', require('./routes/farwaniya1'));
 app.use('/api/farwaniya2', require('./routes/farwaniya2'));

@@ -23,6 +23,7 @@ const fursatkumEmployeeSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: false,
   },
 }, {
   timestamps: true,

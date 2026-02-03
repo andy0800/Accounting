@@ -699,8 +699,10 @@ router.get('/rental-payments', async (req, res) => {
       { header: bilingualHeader('الوحدة', 'Unit'), key: 'unit', width: 18 },
       { header: bilingualHeader('السكرتير', 'Secretary'), key: 'secretary', width: 20 },
       { header: bilingualHeader('المبلغ (د.ك)', 'Amount (KWD)'), key: 'amount', width: 18 },
+      { header: bilingualHeader('الدفتر', 'Ledger'), key: 'ledger', width: 12 },
       { header: bilingualHeader('طريقة الدفع', 'Method'), key: 'method', width: 15 },
       { header: bilingualHeader('مرجع العملية', 'Transaction Ref'), key: 'transaction', width: 22 },
+      { header: bilingualHeader('مرجع فرصة', 'Fursatkum Ref'), key: 'fursatkumRef', width: 18 },
       { header: bilingualHeader('المتبقي', 'Remaining'), key: 'remaining', width: 15 },
     ];
 
@@ -715,8 +717,10 @@ router.get('/rental-payments', async (req, res) => {
         unit: payment.contractId?.unitId?.unitNumber || payment.contractId?.unitSnapshot?.unitNumber,
         secretary: payment.contractId?.rentalSecretaryId?.name || payment.contractId?.secretarySnapshot?.name,
         amount: payment.amount,
+        ledger: payment.ledger || '',
         method: payment.method,
         transaction: payment.transactionRef || '',
+        fursatkumRef: payment.fursatkumInvoiceRef || '',
         remaining: payment.remainingBalance,
       });
     });

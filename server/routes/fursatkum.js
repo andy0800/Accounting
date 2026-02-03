@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const FursatkumInvoice = require('../models/FursatkumInvoice');
 const FursatkumTransaction = require('../models/FursatkumTransaction');
 const FursatkumAccount = require('../models/FursatkumAccount');
@@ -38,6 +39,17 @@ router.use(requireAdmin); // Admin-only system
 
 // Helper to extract user id from JWT payload
 const getUserId = (req) => req.user?.userId || req.user?.sub || req.user?.id;
+
+// Helper to get valid ObjectId for createdBy (handles hardcoded 'admin' case)
+const getValidCreatedBy = (req) => {
+  const userId = getUserId(req);
+  if (!userId) return undefined;
+  // Check if it's a valid ObjectId string (24 hex characters)
+  if (mongoose.Types.ObjectId.isValid(userId) && userId !== 'admin') {
+    return userId;
+  }
+  return undefined; // Return undefined for hardcoded admin or invalid IDs
+};
 
 // ==================== FILE UPLOAD ====================
 
@@ -539,13 +551,17 @@ router.post('/employees', async (req, res) => {
       return res.status(400).json({ message: 'قيمة الراتب غير صالحة' });
     }
 
-    const employee = new FursatkumEmployee({
+    const employeeData = {
       name,
       monthlySalary: salaryValue,
       status: status || 'active',
       notes,
-      createdBy: getUserId(req),
-    });
+    };
+    const validCreatedBy = getValidCreatedBy(req);
+    if (validCreatedBy) {
+      employeeData.createdBy = validCreatedBy;
+    }
+    const employee = new FursatkumEmployee(employeeData);
     await employee.save();
     res.status(201).json({ message: 'تم إنشاء الموظف بنجاح', employee });
   } catch (error) {
@@ -754,15 +770,19 @@ router.post('/employee-loans', async (req, res) => {
 
     const referenceNumber = await FursatkumAccount.getNextReference('loan');
 
-    const loan = new FursatkumEmployeeLoan({
+    const loanData = {
       employeeId,
       referenceNumber,
       originalAmount: numAmount,
       remainingAmount: numAmount,
       monthlyDeduction: numMonthlyDeduction,
       description,
-      createdBy: getUserId(req),
-    });
+    };
+    const validCreatedByLoan = getValidCreatedBy(req);
+    if (validCreatedByLoan) {
+      loanData.createdBy = validCreatedByLoan;
+    }
+    const loan = new FursatkumEmployeeLoan(loanData);
 
     await loan.save();
     await account.save();
@@ -891,7 +911,7 @@ router.post('/salaries/pay', async (req, res) => {
 
     const referenceNumber = await FursatkumAccount.getNextReference('salary');
 
-    const salary = new FursatkumSalaryPayment({
+    const salaryData = {
       employeeId,
       referenceNumber,
       grossSalary: numGrossSalary,
@@ -899,8 +919,12 @@ router.post('/salaries/pay', async (req, res) => {
       netPaid,
       ledger,
       date: new Date(date),
-      createdBy: getUserId(req),
-    });
+    };
+    const validCreatedBySalary = getValidCreatedBy(req);
+    if (validCreatedBySalary) {
+      salaryData.createdBy = validCreatedBySalary;
+    }
+    const salary = new FursatkumSalaryPayment(salaryData);
 
     await salary.save();
 

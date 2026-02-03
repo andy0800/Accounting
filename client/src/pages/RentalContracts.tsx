@@ -48,7 +48,7 @@ const RentalContracts: React.FC = () => {
   const fetchContracts = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/rental-contracts');
+      const response = await apiClient.get('/api/fursatkum/rental-contracts');
       setContracts(response.data || []);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل في جلب العقود');
@@ -63,7 +63,7 @@ const RentalContracts: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      const response = await apiClient.get('/api/exports/rental-contracts', { responseType: 'blob' });
+      const response = await apiClient.get('/api/fursatkum/exports/rental-contracts', { responseType: 'blob' });
       const blob = new Blob([response.data], { type: response.headers['content-type'] });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -93,7 +93,7 @@ const RentalContracts: React.FC = () => {
           <Button variant="outlined" startIcon={<CloudDownloadIcon />} onClick={handleExport}>
             تصدير Excel
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/renting/contracts/new')}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/fursatkum/renting/contracts/new')}>
             عقد جديد
           </Button>
         </Stack>
@@ -133,7 +133,7 @@ const RentalContracts: React.FC = () => {
                     <Chip color={contract.status === 'نشط' ? 'success' : 'default'} label={contract.status} size="small" />
                   </TableCell>
                   <TableCell>
-                    <Button variant="text" onClick={() => navigate(`/renting/contracts/${contract._id}`)}>
+                    <Button variant="text" onClick={() => navigate(`/fursatkum/renting/contracts/${contract._id}`)}>
                       التفاصيل
                     </Button>
                   </TableCell>

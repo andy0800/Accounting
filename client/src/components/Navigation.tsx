@@ -93,6 +93,14 @@ const isFarwaniya2User = role === 'farwaniya2_user';
     { text: 'موظف جديد', icon: <AddIcon />, path: '/fursatkum/employees/new', roles: ['admin'] },
     { text: 'قرض موظف جديد', icon: <AddIcon />, path: '/fursatkum/loans/new', roles: ['admin'] },
     { text: 'صرف الرواتب', icon: <AccountIcon />, path: '/fursatkum/salaries/process', roles: ['admin'] },
+    { text: 'لوحة التأجير', icon: <HomeIcon />, path: '/fursatkum/renting', roles: ['admin'] },
+    { text: 'سكرتارية التأجير', icon: <BusinessIcon />, path: '/fursatkum/renting/secretaries', roles: ['admin'] },
+    { text: 'وحدة جديدة', icon: <AddIcon />, path: '/fursatkum/renting/units/new', roles: ['admin'] },
+    { text: 'الوحدات', icon: <ApartmentIcon />, path: '/fursatkum/renting/units', roles: ['admin'] },
+    { text: 'عقد تأجير جديد', icon: <AddIcon />, path: '/fursatkum/renting/contracts/new', roles: ['admin'] },
+    { text: 'عقود التأجير', icon: <Description />, path: '/fursatkum/renting/contracts', roles: ['admin'] },
+    { text: 'إدارة الدفعات', icon: <AssessmentIcon />, path: '/fursatkum/renting/management', roles: ['admin'] },
+    { text: 'محاسبة التأجير', icon: <AccountIcon />, path: '/fursatkum/renting/accounting', roles: ['admin'] },
   ];
 
 const farwaniya1MenuItems = [
@@ -115,11 +123,10 @@ const farwaniya2MenuItems = [
 
   const systemOptions = [
     { value: 'visa', label: 'نظام التأشيرات', path: '/' },
-    { value: 'renting', label: 'نظام التأجير', path: '/renting' },
     { value: 'home', label: 'نظام محاسبة الخدمات المنزلية', path: '/home-service' },
-  { value: 'fursatkum', label: 'نظام محاسبة فرصتكم', path: '/fursatkum' },
-  { value: 'farwaniya1', label: 'نظام محاسبة مكتب الفروانية الأول', path: '/farwaniya1' },
-  { value: 'farwaniya2', label: 'نظام محاسبة مكتب الفروانية الثاني', path: '/farwaniya2' },
+    { value: 'fursatkum', label: 'نظام محاسبة فرصتكم', path: '/fursatkum' },
+    { value: 'farwaniya1', label: 'نظام محاسبة مكتب الفروانية الأول', path: '/farwaniya1' },
+    { value: 'farwaniya2', label: 'نظام محاسبة مكتب الفروانية الثاني', path: '/farwaniya2' },
   ];
 
   const getSystemFromPath = (pathname: string) => {

@@ -23,8 +23,8 @@ const RentingDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [managementRes, accountingRes] = await Promise.all([
-        apiClient.get('/api/rental-management'),
-        apiClient.get('/api/rental-accounting'),
+        apiClient.get('/api/fursatkum/rental-management'),
+        apiClient.get('/api/fursatkum/rental-accounting'),
       ]);
       setManagement(managementRes.data);
       setAccounting(accountingRes.data);
@@ -67,7 +67,7 @@ const RentingDashboard: React.FC = () => {
             <CardContent>
               <Typography color="text.secondary">مستحق</Typography>
               <Typography variant="h5">{management?.pending?.length || 0}</Typography>
-              <Button size="small" sx={{ mt: 1 }} onClick={() => navigate('/renting/management')}>
+              <Button size="small" sx={{ mt: 1 }} onClick={() => navigate('/fursatkum/renting/management')}>
                 عرض التفاصيل
               </Button>
             </CardContent>
